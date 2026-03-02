@@ -237,18 +237,18 @@ export const DiffView = memo(function DiffView({
     <div className="border border-border-200/50 rounded-lg overflow-hidden bg-bg-100 font-mono text-xs">
       {/* Header */}
       <div 
-        className="flex items-center justify-between px-3 py-2 bg-bg-200/50 cursor-pointer hover:bg-bg-200 transition-colors select-none"
+        className="flex items-center gap-3 px-3 py-2 bg-bg-200/50 cursor-pointer hover:bg-bg-200 transition-colors select-none"
         onClick={() => setCollapsed(!collapsed)}
       >
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <div className={`transition-transform duration-200 ${collapsed ? '' : 'rotate-180'} text-text-400`}>
              <ChevronDownIcon />
           </div>
           {fileName && (
-            <span className="text-text-200 font-medium truncate">{fileName}</span>
+            <span className="text-text-200 font-medium truncate flex-1 min-w-0">{fileName}</span>
           )}
         </div>
-        <div className="flex items-center gap-3 tabular-nums font-medium">
+        <div className="flex items-center gap-3 tabular-nums font-medium shrink-0 whitespace-nowrap">
           {stats.additions > 0 && (
             <span className="text-success-100">+{stats.additions}</span>
           )}

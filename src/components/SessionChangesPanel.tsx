@@ -364,13 +364,13 @@ export const SessionChangesPanel = memo(function SessionChangesPanel({
                     key={diff.file}
                     onClick={() => handleSelectFile(diff.file)}
                     className={`
-                      w-full flex items-center gap-2 px-3 py-1 text-left
+                      w-full min-w-0 flex items-center gap-2 px-3 py-1 text-left
                       hover:bg-bg-200/50 transition-colors text-[12px]
                       ${isSelected ? 'bg-bg-200/70 text-text-100' : 'text-text-300'}
                     `}
                   >
                     <FileStatusIcon status={fileStatus} />
-                    <span className="flex-1 font-mono truncate">{diff.file}</span>
+                    <span className="flex-1 min-w-0 font-mono truncate">{diff.file}</span>
                     <div className="flex items-center gap-2 text-[10px] font-mono shrink-0">
                       {diff.additions > 0 && <span className="text-success-100">+{diff.additions}</span>}
                       {diff.deletions > 0 && <span className="text-danger-100">-{diff.deletions}</span>}
@@ -436,10 +436,10 @@ const DiffPreviewPanel = memo(function DiffPreviewPanel({
   return (
     <div className="flex flex-col h-full">
       {/* Preview Header */}
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-border-100/50 bg-bg-100/30 shrink-0">
-        <div className="flex items-center gap-2 min-w-0">
+      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border-100/50 bg-bg-100/30 shrink-0">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <FileStatusIcon status={fileStatus} />
-          <span className="text-[11px] font-mono text-text-200 truncate">{fileName}</span>
+          <span className="text-[11px] font-mono text-text-200 truncate flex-1 min-w-0">{fileName}</span>
           <div className="flex items-center gap-2 text-[10px] font-mono shrink-0">
             {diff.additions > 0 && <span className="text-success-100">+{diff.additions}</span>}
             {diff.deletions > 0 && <span className="text-danger-100">-{diff.deletions}</span>}
@@ -613,7 +613,7 @@ const ChangesTreeItem = memo(function ChangesTreeItem({
       <>
         <button
           onClick={() => onToggleDir(node.path)}
-          className="w-full flex items-center gap-1.5 py-1 hover:bg-bg-200/50 transition-colors text-[12px] text-text-300"
+          className="w-full min-w-0 flex items-center gap-1.5 py-1 hover:bg-bg-200/50 transition-colors text-[12px] text-text-300"
           style={{ paddingLeft }}
         >
           <ChevronRightIcon
@@ -625,7 +625,7 @@ const ChangesTreeItem = memo(function ChangesTreeItem({
           ) : (
             <FolderIcon size={14} className={`${statusColor} shrink-0`} />
           )}
-          <span className={`flex-1 truncate text-left ${node.status ? statusColor : ''}`}>{node.name}</span>
+          <span className={`flex-1 min-w-0 truncate text-left ${node.status ? statusColor : ''}`}>{node.name}</span>
           <div className="flex items-center gap-1.5 text-[10px] font-mono pr-3 shrink-0">
             {node.additions > 0 && <span className="text-success-100">+{node.additions}</span>}
             {node.deletions > 0 && <span className="text-danger-100">-{node.deletions}</span>}
@@ -651,14 +651,14 @@ const ChangesTreeItem = memo(function ChangesTreeItem({
     <button
       onClick={() => node.diff && onSelectFile(node.diff.file)}
       className={`
-        w-full flex items-center gap-1.5 py-1 transition-colors text-[12px]
+        w-full min-w-0 flex items-center gap-1.5 py-1 transition-colors text-[12px]
         hover:bg-bg-200/50
         ${isSelected ? 'bg-bg-200/70 text-text-100' : 'text-text-300'}
       `}
       style={{ paddingLeft: paddingLeft + 16 }}
     >
       <FileStatusIcon status={node.status!} />
-      <span className="flex-1 font-mono truncate text-left">{node.name}</span>
+      <span className="flex-1 min-w-0 font-mono truncate text-left">{node.name}</span>
       <div className="flex items-center gap-1.5 text-[10px] font-mono pr-3 shrink-0">
         {node.additions > 0 && <span className="text-success-100">+{node.additions}</span>}
         {node.deletions > 0 && <span className="text-danger-100">-{node.deletions}</span>}

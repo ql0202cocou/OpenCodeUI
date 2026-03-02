@@ -167,7 +167,7 @@ export const MultiFileDiffModal = memo(function MultiFileDiffModal({
                   <button
                     key={idx}
                     onClick={() => setSelectedFileIndex(idx)}
-                    className={`w-full text-left px-3 py-1.5 text-xs flex items-center gap-2 transition-colors ${
+                    className={`w-full min-w-0 text-left px-3 py-1.5 text-xs flex items-center gap-2 transition-colors ${
                       isSelected
                         ? 'bg-accent-main-100/10 text-text-100'
                         : 'text-text-300 hover:bg-bg-200/40 hover:text-text-200'
@@ -177,7 +177,7 @@ export const MultiFileDiffModal = memo(function MultiFileDiffModal({
                       size={13}
                       className={isSelected ? 'text-accent-main-100 shrink-0' : 'text-text-500 shrink-0'}
                     />
-                    <span className="font-mono truncate flex-1">{name}</span>
+                    <span className="font-mono truncate flex-1 min-w-0">{name}</span>
                     <div className="flex items-center gap-1 text-[10px] font-mono tabular-nums shrink-0">
                       {d.additions > 0 && <span className="text-success-100">+{d.additions}</span>}
                       {d.deletions > 0 && <span className="text-danger-100">-{d.deletions}</span>}
@@ -194,8 +194,8 @@ export const MultiFileDiffModal = memo(function MultiFileDiffModal({
           {selectedDiff ? (
             <>
               {/* File path bar */}
-              <div className="h-8 px-4 border-b border-border-100/20 flex items-center justify-between shrink-0">
-                <span className="font-mono text-[11px] text-text-300 truncate">{selectedDiff.file}</span>
+              <div className="h-8 px-4 border-b border-border-100/20 flex items-center gap-2 shrink-0">
+                <span className="font-mono text-[11px] text-text-300 truncate flex-1 min-w-0">{selectedDiff.file}</span>
                 <div className="flex items-center gap-1.5 text-[10px] font-mono tabular-nums shrink-0">
                   {selectedDiff.additions > 0 && <span className="text-success-100">+{selectedDiff.additions}</span>}
                   {selectedDiff.deletions > 0 && <span className="text-danger-100">-{selectedDiff.deletions}</span>}

@@ -350,13 +350,13 @@ export function ProjectDialog({ isOpen, onClose, onSelect, initialPath = '' }: P
       </div>
 
       {/* Footer */}
-      <div className="p-3 border-t border-border-200/50 flex items-center justify-between shrink-0">
-        <div className="text-[10px] text-text-400 truncate flex-1 mr-4 font-mono">
+      <div className="p-3 border-t border-border-200/50 flex items-center gap-3 shrink-0">
+        <div className="text-[10px] text-text-400 flex-1 min-w-0 font-mono whitespace-normal break-all leading-4">
           {inputValue}
         </div>
         <button
           onClick={handleConfirmCurrent}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-bg-000 hover:bg-accent-main-100/10 border border-border-200 hover:border-accent-main-100/30 text-text-200 hover:text-accent-main-100 rounded-lg transition-colors text-xs font-medium"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-bg-000 hover:bg-accent-main-100/10 border border-border-200 hover:border-accent-main-100/30 text-text-200 hover:text-accent-main-100 rounded-lg transition-colors text-xs font-medium shrink-0 whitespace-nowrap"
         >
           <PlusIcon className="w-3 h-3" />
           Add current

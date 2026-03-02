@@ -169,16 +169,16 @@ export const FullscreenViewer = memo(function FullscreenViewer(props: Fullscreen
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between h-11 px-4 border-b border-border-100/60 bg-bg-200/30 shrink-0">
+        <div className="flex items-center h-11 px-4 border-b border-border-100/60 bg-bg-200/30 shrink-0 gap-3">
           {/* Left: file info */}
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             {fileName && (
-              <span className="text-text-100 font-mono text-[13px] font-medium truncate">
+              <span className="text-text-100 font-mono text-[13px] font-medium truncate min-w-0 flex-1">
                 {fileName}
               </span>
             )}
             {filePath && fileName && filePath !== fileName && (
-              <span className="text-text-500 font-mono text-[11px] truncate hidden sm:block">
+              <span className="text-text-500 font-mono text-[11px] truncate hidden sm:block min-w-0">
                 {filePath}
               </span>
             )}
@@ -193,7 +193,7 @@ export const FullscreenViewer = memo(function FullscreenViewer(props: Fullscreen
             
             {/* Line count for code */}
             {props.mode === 'code' && (
-              <span className="text-text-500 text-[11px] font-mono">
+              <span className="text-text-500 text-[11px] font-mono shrink-0">
                 {lineCount} lines
               </span>
             )}
