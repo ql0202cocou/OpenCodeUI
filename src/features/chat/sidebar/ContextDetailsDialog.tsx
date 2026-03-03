@@ -10,7 +10,7 @@ import {
 } from '../../../components/Icons'
 import { useMessageStore, messageStore } from '../../../store'
 import { useSessionStats, formatTokens, formatCost } from '../../../hooks'
-import type { Message, TokenUsage } from '../../../types/message'
+import type { Message, TokenUsage, Part } from '../../../types/message'
 
 interface ContextDetailsDialogProps {
   isOpen: boolean
@@ -74,6 +74,82 @@ export function ContextDetailsDialog({ isOpen, onClose, contextLimit }: ContextD
     return Math.round((total / contextLimit) * 100)
   }, [lastAssistantWithTokens, contextLimit])
 
+  // Estimate context breakdown by content character sizes
+  const contextBreakdown = useMemo(() => {
+    if (!messages.length) return null
+
+    let userChars = 0
+    let assistantChars = 0
+    let toolChars = 0
+    let otherChars = 0
+
+    const measurePart = (part: Part, role: 'user' | 'assistant') => {
+      switch (part.type) {
+        case 'text':
+          if (part.synthetic) {
+            otherChars += part.text.length
+          } else if (role === 'user') {
+            userChars += part.text.length
+          } else {
+            assistantChars += part.text.length
+          }
+          break
+        case 'reasoning':
+          assistantChars += part.text.length
+          break
+        case 'tool': {
+          const inputStr = part.state.input ? JSON.stringify(part.state.input) : ''
+          const outputStr = part.state.output || ''
+          toolChars += inputStr.length + outputStr.length
+          break
+        }
+        case 'file':
+          if (part.source && 'text' in part.source) {
+            otherChars += part.source.text.value?.length || 0
+          } else {
+            otherChars += 100 // rough estimate for file metadata
+          }
+          break
+        case 'agent':
+          otherChars += part.source?.value?.length || 50
+          break
+        case 'snapshot':
+          otherChars += part.snapshot?.length || 0
+          break
+        case 'subtask':
+          otherChars += (part.prompt?.length || 0) + (part.description?.length || 0)
+          break
+        default:
+          otherChars += 50
+          break
+      }
+    }
+
+    for (const msg of messages) {
+      for (const part of msg.parts) {
+        measurePart(part, msg.info.role)
+      }
+      // If no parts loaded yet, estimate from role
+      if (msg.parts.length === 0) {
+        if (msg.info.role === 'user') {
+          userChars += 200 // rough estimate for unloaded user message
+        } else {
+          assistantChars += 200 // rough estimate for unloaded assistant message
+        }
+      }
+    }
+
+    const totalChars = userChars + assistantChars + toolChars + otherChars
+    if (totalChars === 0) return null
+
+    const userPct = (userChars / totalChars) * 100
+    const assistantPct = (assistantChars / totalChars) * 100
+    const toolPct = (toolChars / totalChars) * 100
+    const otherPct = (otherChars / totalChars) * 100
+
+    return { userPct, assistantPct, toolPct, otherPct }
+  }, [messages])
+
   const handleToggleMessage = useCallback(
     async (msg: Message) => {
       const id = msg.info.id
@@ -118,6 +194,60 @@ export function ContextDetailsDialog({ isOpen, onClose, contextLimit }: ContextD
             <Stat label="Output" value={formatTokens(contextTokens.output)} />
             <Stat label="Reasoning" value={formatTokens(contextTokens.reasoning)} />
             <Stat label="Cache (r/w)" value={`${formatTokens(contextTokens.cache.read)} / ${formatTokens(contextTokens.cache.write)}`} />
+          </div>
+        )}
+
+        {contextBreakdown && (
+          <div className="flex flex-col gap-2">
+            <div className="text-[10px] font-bold text-text-400 uppercase tracking-wider">Context Breakdown</div>
+            <div className="h-3 w-full rounded-full overflow-hidden flex bg-bg-200/30">
+              {contextBreakdown.userPct > 0 && (
+                <div
+                  className="h-full bg-green-500 transition-all"
+                  style={{ width: `${contextBreakdown.userPct}%` }}
+                  title={`User ${contextBreakdown.userPct.toFixed(1)}%`}
+                />
+              )}
+              {contextBreakdown.assistantPct > 0 && (
+                <div
+                  className="h-full bg-blue-400 transition-all"
+                  style={{ width: `${contextBreakdown.assistantPct}%` }}
+                  title={`Assistant ${contextBreakdown.assistantPct.toFixed(1)}%`}
+                />
+              )}
+              {contextBreakdown.toolPct > 0 && (
+                <div
+                  className="h-full bg-yellow-500 transition-all"
+                  style={{ width: `${contextBreakdown.toolPct}%` }}
+                  title={`Tool Calls ${contextBreakdown.toolPct.toFixed(1)}%`}
+                />
+              )}
+              {contextBreakdown.otherPct > 0 && (
+                <div
+                  className="h-full bg-gray-500 transition-all"
+                  style={{ width: `${contextBreakdown.otherPct}%` }}
+                  title={`Other ${contextBreakdown.otherPct.toFixed(1)}%`}
+                />
+              )}
+            </div>
+            <div className="flex items-center gap-4 text-[11px] text-text-400 font-mono flex-wrap">
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
+                User {contextBreakdown.userPct.toFixed(1)}%
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block w-2 h-2 rounded-full bg-blue-400" />
+                Assistant {contextBreakdown.assistantPct.toFixed(1)}%
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block w-2 h-2 rounded-full bg-yellow-500" />
+                Tool Calls {contextBreakdown.toolPct.toFixed(1)}%
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block w-2 h-2 rounded-full bg-gray-500" />
+                Other {contextBreakdown.otherPct.toFixed(1)}%
+              </span>
+            </div>
           </div>
         )}
 
