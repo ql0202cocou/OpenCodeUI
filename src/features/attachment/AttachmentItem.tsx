@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect, memo } from 'react'
 import { CloseIcon, ChevronDownIcon, CopyIcon, CheckIcon, DownloadIcon, ExpandIcon } from '../../components/Icons'
 import { getAttachmentIcon, hasExpandableContent } from './utils'
+import { getMaterialIconUrl } from '../../utils/materialIcons'
 import { useDelayedRender } from '../../hooks/useDelayedRender'
 import { AttachmentDetailModal } from './AttachmentDetailModal'
 import { clipboardErrorHandler } from '../../utils'
@@ -30,6 +31,15 @@ function AttachmentItemComponent({
   const { Icon, colorClass } = getAttachmentIcon(attachment)
   const canExpand = expandable && hasExpandableContent(attachment)
   
+  // file/folder 使用 material icon，其他类型用通用 SVG 图标
+  const useMaterialIcon = attachment.type === 'file' || attachment.type === 'folder'
+  const materialIconUrl = useMaterialIcon
+    ? getMaterialIconUrl(
+        attachment.relativePath || attachment.displayName,
+        attachment.type === 'folder' ? 'directory' : 'file',
+      )
+    : null
+  
   // 宽度模型：学习 ReasoningPartView 的做法
   // 收起时固定宽度，展开时用百分比+max限制（可被 CSS 过渡）
   // 不用 w-auto（无法过渡），用 w-full（百分比 → 计算像素 → 可过渡）
@@ -53,7 +63,20 @@ function AttachmentItemComponent({
         `}
         onClick={canExpand ? () => setIsExpanded(!isExpanded) : undefined}
       >
-        <span className={`${colorClass} flex items-center justify-center w-4 h-4 shrink-0 [&>svg]:w-3.5 [&>svg]:h-3.5`}><Icon /></span>
+        {materialIconUrl ? (
+          <img
+            src={materialIconUrl}
+            alt=""
+            width={14}
+            height={14}
+            className="shrink-0"
+            loading="lazy"
+            decoding="async"
+            onError={(e) => { e.currentTarget.style.visibility = 'hidden' }}
+          />
+        ) : (
+          <span className={`${colorClass} flex items-center justify-center w-4 h-4 shrink-0 [&>svg]:w-3.5 [&>svg]:h-3.5`}><Icon /></span>
+        )}
         <span className="text-text-200 flex-1 min-w-0 truncate text-left" title={attachment.displayName}>
           {attachment.displayName}
         </span>
