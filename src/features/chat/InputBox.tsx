@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo, memo } from 'react'
 import { AttachmentPreview, type Attachment } from '../attachment'
-import { MentionMenu, detectMentionTrigger, type MentionMenuHandle, type MentionItem } from '../mention'
+import { MentionMenu, detectMentionTrigger, normalizePath, toFileUrl, type MentionMenuHandle, type MentionItem } from '../mention'
 import { SlashCommandMenu, type SlashCommandMenuHandle } from '../slash-command'
 import { InputToolbar } from './input/InputToolbar'
 import { InputFooter } from './input/InputFooter'
@@ -739,8 +739,9 @@ function InputBoxComponent({
     e.preventDefault()
     e.stopPropagation()
     dragCounterRef.current++
-    // 只在有文件类型的拖拽时高亮
-    if (supportsAnyFile && e.dataTransfer.types.includes('Files')) {
+    // 自定义拖拽（来自 FileExplorer）或原生文件拖拽都高亮
+    if (e.dataTransfer.types.includes('application/opencode-file') ||
+        (supportsAnyFile && e.dataTransfer.types.includes('Files'))) {
       setIsDragging(true)
     }
   }, [supportsAnyFile])
@@ -764,10 +765,67 @@ function InputBoxComponent({
     e.stopPropagation()
     dragCounterRef.current = 0
     setIsDragging(false)
+
+    // 优先处理来自 FileExplorer 的自定义拖拽
+    const opencodeData = e.dataTransfer.getData('application/opencode-file')
+    if (opencodeData) {
+      try {
+        const fileInfo = JSON.parse(opencodeData) as {
+          type: 'file' | 'folder'
+          path: string      // 相对路径
+          absolute: string   // 绝对路径
+          name: string
+        }
+
+        const relativePath = normalizePath(fileInfo.path)
+        const mentionText = `@${relativePath}`
+        const cursorPos = textareaRef.current?.selectionStart ?? text.length
+
+        // 在光标位置插入 @mention 文本
+        const beforeCursor = text.slice(0, cursorPos)
+        const afterCursor = text.slice(cursorPos)
+        // 如果光标前不是空格或空文本，插入空格分隔
+        const needSpaceBefore = beforeCursor.length > 0 && !beforeCursor.endsWith(' ') && !beforeCursor.endsWith('\n')
+        const prefix = needSpaceBefore ? ' ' : ''
+        const newText = beforeCursor + prefix + mentionText + ' ' + afterCursor
+        const mentionStart = cursorPos + prefix.length
+
+        // 创建附件
+        const attachment: Attachment = {
+          id: crypto.randomUUID(),
+          type: fileInfo.type,
+          displayName: fileInfo.name,
+          relativePath,
+          url: toFileUrl(fileInfo.absolute),
+          mime: fileInfo.type === 'file' ? 'text/plain' : undefined,
+          textRange: {
+            value: mentionText,
+            start: mentionStart,
+            end: mentionStart + mentionText.length,
+          },
+        }
+
+        setText(newText)
+        setAttachments(prev => [...prev, attachment])
+
+        // 聚焦并移动光标到 @mention 之后
+        requestAnimationFrame(() => {
+          if (!textareaRef.current) return
+          const newCursorPos = mentionStart + mentionText.length + 1
+          textareaRef.current.setSelectionRange(newCursorPos, newCursorPos)
+          textareaRef.current.focus()
+        })
+      } catch (err) {
+        console.warn('[InputBox] Failed to parse opencode-file drag data:', err)
+      }
+      return
+    }
+
+    // 原生文件拖拽
     if (supportsAnyFile && e.dataTransfer.files.length > 0) {
       handleFileUpload(e.dataTransfer.files)
     }
-  }, [supportsAnyFile, handleFileUpload])
+  }, [supportsAnyFile, handleFileUpload, text])
 
   // Tauri 原生 drag-drop 事件（Tauri 默认拦截 WebView 的 HTML5 drag/drop）
   // Tauri 的 drag-drop 是 window 级别事件，坐标是物理像素且受 DPI/标题栏偏移影响，

@@ -4,7 +4,7 @@
 // 性能优化：使用 CSS 变量 + requestAnimationFrame 处理 resize
 // ============================================
 
-import { memo, useCallback, useMemo, useEffect, useRef, useState, useLayoutEffect } from 'react'
+import { memo, useCallback, useMemo, useEffect, useRef, useState, useLayoutEffect, type DragEvent } from 'react'
 import { useFileExplorer, type FileTreeNode } from '../hooks'
 import { layoutStore, type PreviewFile } from '../store/layoutStore'
 import { 
@@ -354,9 +354,23 @@ const FileTreeItem = memo(function FileTreeItem({
     }
   }, [status])
 
+  // 拖拽到输入框实现 @mention
+  const handleDragStart = useCallback((e: DragEvent<HTMLButtonElement>) => {
+    const data = JSON.stringify({
+      type: isDirectory ? 'folder' : 'file',
+      path: node.path,        // 相对路径
+      absolute: node.absolute, // 绝对路径
+      name: node.name,
+    })
+    e.dataTransfer.setData('application/opencode-file', data)
+    e.dataTransfer.effectAllowed = 'copy'
+  }, [node.path, node.absolute, node.name, isDirectory])
+
   return (
     <div>
       <button
+        draggable
+        onDragStart={handleDragStart}
         onClick={() => onClick(node)}
         className={`
           w-full flex items-center gap-1 px-2 py-0.5 text-left
