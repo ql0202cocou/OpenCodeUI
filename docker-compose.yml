@@ -64,7 +64,6 @@ services:
         volumes:
             - ${WORKSPACE:-./workspace}:/workspace
             - opencode-home:/root
-            - ./docker/backend-entrypoint.sh:/usr/local/bin/backend-entrypoint.sh:ro
         working_dir: /workspace
         entrypoint: ["/bin/sh", "/usr/local/bin/backend-entrypoint.sh"]
         environment:
