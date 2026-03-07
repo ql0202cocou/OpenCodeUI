@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.1.4] - 2026-03-07
+
+- fix: split frontend and api slash commands (bdb2e33)
+- fix: support clipboard fallback in insecure contexts (edf4dd0)
+- fix: align slash command descriptions (9d84a78)
+
 ## [v0.1.3] - 2026-03-07
 
 - chore: restore release workflow formatting (73a41a4)
