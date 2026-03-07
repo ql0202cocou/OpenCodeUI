@@ -10,6 +10,11 @@ export function isTauri(): boolean {
   return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
 }
 
+export function isTauriMobile(): boolean {
+  if (!isTauri() || typeof navigator === 'undefined') return false
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+}
+
 /** 文件扩展名 → MIME 类型映射 */
 export function extToMime(ext: string): string {
   const map: Record<string, string> = {

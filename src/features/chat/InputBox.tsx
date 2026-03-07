@@ -17,6 +17,7 @@ import { useMessages } from '../../store/messageStore'
 import { getMessageText, type FilePart, type AgentPart } from '../../types/message'
 import { useIsMobile } from '../../hooks'
 import { ArrowDownIcon, ArrowUpIcon, PermissionListIcon, QuestionIcon } from '../../components/Icons'
+import { extToMime } from '../../utils/tauri'
 import type { ApiAgent } from '../../api/client'
 import type { ModelInfo, FileCapabilities } from '../../api'
 import type { Command } from '../../api/command'
@@ -717,28 +718,35 @@ function InputBoxComponent({
   }, [])
 
   // 通用文件上传 — 根据模型能力判断是否接受
-  const handleFileUpload = useCallback(
-    async (files: FileList | null) => {
-      if (!files || !supportsAnyFile) return
+  const handleFilesSelected = useCallback(
+    async (files: File[]) => {
+      if (files.length === 0 || !supportsAnyFile) return
 
-      for (const file of Array.from(files)) {
+      const nextAttachments: Attachment[] = []
+
+      for (const rawFile of files) {
+        const file = ensureFileMime(rawFile)
+
         // 按 MIME 类型检查模型能力
         if (!isFileSupported(file.type, fileCaps)) continue
 
         try {
           const dataUrl = await readFileAsDataUrl(file)
 
-          const attachment: Attachment = {
+          nextAttachments.push({
             id: crypto.randomUUID(),
             type: 'file',
             displayName: file.name,
             url: dataUrl,
             mime: file.type,
-          }
-          setAttachments(prev => [...prev, attachment])
+          })
         } catch (err) {
           console.warn('[InputBox] Failed to process file:', err)
         }
+      }
+
+      if (nextAttachments.length > 0) {
+        setAttachments(prev => [...prev, ...nextAttachments])
       }
     },
     [supportsAnyFile, fileCaps],
@@ -774,23 +782,21 @@ function InputBoxComponent({
           for (let i = 0; i < items.length; i++) {
             if (items[i].kind === 'file') {
               const file = items[i].getAsFile()
-              if (file && isFileSupported(file.type, fileCaps)) files.push(file)
+              if (file && isFileSupported(ensureFileMime(file).type, fileCaps)) files.push(file)
             }
           }
         }
 
         if (files.length > 0) {
           e.preventDefault()
-          const dt = new DataTransfer()
-          files.forEach(f => dt.items.add(f))
-          handleFileUpload(dt.files)
+          void handleFilesSelected(files)
           return
         }
       }
 
       // 文本粘贴：让 textarea 默认处理（天然支持换行和 undo）
     },
-    [supportsAnyFile, fileCaps, handleFileUpload],
+    [supportsAnyFile, fileCaps, handleFilesSelected],
   )
 
   // 拖拽文件到输入框
@@ -889,10 +895,10 @@ function InputBoxComponent({
 
       // 原生文件拖拽（从操作系统拖入）
       if (supportsAnyFile && e.dataTransfer.files.length > 0) {
-        handleFileUpload(e.dataTransfer.files)
+        void handleFilesSelected(Array.from(e.dataTransfer.files))
       }
     },
-    [supportsAnyFile, handleFileUpload, insertDraggedFile],
+    [supportsAnyFile, handleFilesSelected, insertDraggedFile],
   )
 
   // 滚动同步（备用，overlay 内部也监听了 scroll）
@@ -1089,7 +1095,7 @@ function InputBoxComponent({
                       selectedVariant={selectedVariant}
                       onVariantChange={onVariantChange}
                       fileCapabilities={fileCaps}
-                      onFileUpload={handleFileUpload}
+                      onFilesSelected={handleFilesSelected}
                       isStreaming={isStreaming}
                       onAbort={onAbort}
                       canSend={canSend || false}
@@ -1164,6 +1170,19 @@ function isFileSupported(mime: string, caps: FileCapabilities): boolean {
   if (mime.startsWith('audio/')) return caps.audio
   if (mime.startsWith('video/')) return caps.video
   return false
+}
+
+function ensureFileMime(file: File): File {
+  if (file.type) return file
+
+  const ext = file.name.split('.').pop()?.toLowerCase() || ''
+  const mime = extToMime(ext)
+  if (!mime || mime === 'application/octet-stream') return file
+
+  return new File([file], file.name, {
+    type: mime,
+    lastModified: file.lastModified,
+  })
 }
 
 /** 读取文件为 data URL */

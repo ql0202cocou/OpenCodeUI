@@ -3,7 +3,7 @@ import { ChevronDownIcon, SendIcon, StopIcon, PaperclipIcon, AgentIcon, Thinking
 import { DropdownMenu, MenuItem, IconButton, AnimatedPresence } from '../../../components/ui'
 import { InputToolbarModelSelector } from '../ModelSelector'
 import { useIsMobile } from '../../../hooks'
-import { isTauri, extToMime } from '../../../utils/tauri'
+import { isTauri, isTauriMobile, extToMime } from '../../../utils/tauri'
 import type { ApiAgent } from '../../../api/client'
 import type { ModelInfo, FileCapabilities } from '../../../api'
 
@@ -17,7 +17,7 @@ interface InputToolbarProps {
   onVariantChange?: (variant: string | undefined) => void
 
   fileCapabilities?: FileCapabilities
-  onFileUpload: (files: FileList | null) => void
+  onFilesSelected: (files: File[]) => void
 
   isStreaming?: boolean
   onAbort?: () => void
@@ -42,7 +42,7 @@ export function InputToolbar({
   selectedVariant,
   onVariantChange,
   fileCapabilities,
-  onFileUpload,
+  onFilesSelected,
   isStreaming,
   onAbort,
   canSend,
@@ -54,6 +54,7 @@ export function InputToolbar({
   inputContainerRef,
 }: InputToolbarProps) {
   const isMobile = useIsMobile()
+  const useBrowserFileInput = !isTauri() || isTauriMobile()
 
   // 根据模型能力计算支持的文件类型
   const caps = fileCapabilities ?? { image: false, pdf: false, audio: false, video: false }
@@ -104,7 +105,7 @@ export function InputToolbar({
 
   // 文件选择器（Tauri 原生 / 浏览器 fallback）
   const handleFileClick = useCallback(async () => {
-    if (!isTauri()) {
+    if (useBrowserFileInput) {
       fileInputRef.current?.click()
       return
     }
@@ -118,12 +119,16 @@ export function InputToolbar({
       const selected = await open({
         multiple: true,
         filters: tauriFilters,
+        fileAccessMode: 'copy',
       })
 
-      if (!selected || selected.length === 0) return
+      if (!selected) return
+
+      const paths = Array.isArray(selected) ? selected : [selected]
+      if (paths.length === 0) return
 
       const files: File[] = []
-      for (const path of selected) {
+      for (const path of paths) {
         const fileName = path.split(/[\\/]/).pop() || 'file'
         const ext = fileName.split('.').pop()?.toLowerCase() || ''
         const mime = extToMime(ext)
@@ -134,14 +139,12 @@ export function InputToolbar({
       }
 
       if (files.length > 0) {
-        const dt = new DataTransfer()
-        files.forEach(f => dt.items.add(f))
-        onFileUpload(dt.files)
+        onFilesSelected(files)
       }
     } catch (err) {
       console.warn('[InputToolbar] File picker error:', err)
     }
-  }, [onFileUpload, tauriFilters])
+  }, [onFilesSelected, tauriFilters, useBrowserFileInput])
 
   // Click outside logic
   useEffect(() => {
@@ -301,14 +304,17 @@ export function InputToolbar({
         <AnimatedPresence show={supportsAnyFile}>
           <>
             {/* 浏览器模式下的隐藏文件输入 */}
-            {!isTauri() && (
+            {useBrowserFileInput && (
               <input
                 ref={fileInputRef}
                 type="file"
                 accept={acceptString}
                 multiple
                 className="hidden"
-                onChange={e => onFileUpload(e.target.files)}
+                onChange={e => {
+                  onFilesSelected(Array.from(e.target.files ?? []))
+                  e.currentTarget.value = ''
+                }}
               />
             )}
             <IconButton aria-label="Attach file" onClick={handleFileClick}>
