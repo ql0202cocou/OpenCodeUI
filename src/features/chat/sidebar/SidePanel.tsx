@@ -270,6 +270,14 @@ export function SidePanel({
     }
   }, [currentDirectory, refresh])
 
+  const handleDeleteSession = useCallback(async (sessionId: string) => {
+    await deleteSession(sessionId)
+
+    if (selectedSessionId === sessionId) {
+      onNewSession()
+    }
+  }, [deleteSession, onNewSession, selectedSessionId])
+
   useEffect(() => {
     if (!isExpanded) {
       setProjectsExpanded(false)
@@ -517,7 +525,7 @@ export function SidePanel({
                 search={search}
                 onSearchChange={setSearch}
                 onSelect={handleSelect}
-                onDelete={deleteSession}
+                onDelete={handleDeleteSession}
                 onRename={handleRename}
                 onLoadMore={loadMore}
                 onNewChat={onNewSession}
