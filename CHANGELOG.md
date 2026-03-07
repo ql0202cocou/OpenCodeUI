@@ -1,5 +1,15 @@
 # Changelog
 
+## [v0.1.3] - 2026-03-07
+
+- chore: restore release workflow formatting (73a41a4)
+- perf: split code preview from file explorer (b94bfc5)
+- perf: lazy load optional panels and split vendor chunks (9e0f7d6)
+- chore: add test baseline and clean lint debt (0d5f175)
+- chore: establish lint and formatting baseline (762786d)
+- fix: shorten input footer disclaimer copy (d691b7b)
+- chore: automate lockfile updates in release script (e678349)
+
 ## [v0.1.2] - 2026-03-07
 
 - fix: scope active session state to the current directory (2503c6b)
