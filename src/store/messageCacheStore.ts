@@ -271,6 +271,31 @@ export class MessageCacheStore {
     }
   }
 
+  async deleteMessagePartsBatch(sessionId: string, messageIds: string[]): Promise<void> {
+    const uniqueIds = Array.from(new Set(messageIds))
+    if (uniqueIds.length === 0) return
+
+    try {
+      const db = await this.getDb()
+      const tx = db.transaction(STORE_NAME, 'readwrite')
+      const store = tx.objectStore(STORE_NAME)
+
+      for (const messageId of uniqueIds) {
+        store.delete(makeKey(sessionId, messageId))
+      }
+
+      await new Promise<void>((resolve, reject) => {
+        tx.oncomplete = () => resolve()
+        tx.onerror = () => reject(tx.error)
+        tx.onabort = () => reject(tx.error)
+      })
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.warn('[MessageCacheStore] Failed to delete parts batch', error)
+      }
+    }
+  }
+
   /**
    * 清空所有缓存（服务器切换时调用）
    */

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { InputBox } from './InputBox'
 import type { Command } from '../../api/command'
@@ -30,7 +30,11 @@ vi.mock('../slash-command', () => ({
 }))
 
 vi.mock('./input/InputToolbar', () => ({
-  InputToolbar: () => null,
+  InputToolbar: ({ onSend, canSend }: { onSend: () => void; canSend: boolean }) => (
+    <button type="button" onClick={onSend} disabled={!canSend}>
+      send
+    </button>
+  ),
 }))
 
 vi.mock('./input/InputFooter', () => ({
@@ -90,6 +94,48 @@ describe('InputBox slash command selection', () => {
     await waitFor(() => {
       expect(onCommand).not.toHaveBeenCalled()
       expect(textarea.value).toBe('/review ')
+    })
+  })
+
+  it('keeps the draft when sending fails', async () => {
+    const onSend = vi.fn().mockResolvedValue(false)
+
+    render(<InputBox onSend={onSend} />)
+
+    const textarea = screen.getByRole('textbox') as HTMLTextAreaElement
+    fireEvent.change(textarea, { target: { value: 'hello world' } })
+    fireEvent.click(screen.getByRole('button', { name: 'send' }))
+
+    await waitFor(() => {
+      expect(onSend).toHaveBeenCalledWith('hello world', [], { agent: undefined, variant: undefined })
+    })
+
+    expect(textarea.value).toBe('hello world')
+  })
+
+  it('waits for send acknowledgement before clearing the draft', async () => {
+    let resolveSend: ((value: boolean) => void) | null = null
+    const onSend = vi.fn(
+      () =>
+        new Promise<boolean>(resolve => {
+          resolveSend = resolve
+        }),
+    )
+
+    render(<InputBox onSend={onSend} />)
+
+    const textarea = screen.getByRole('textbox') as HTMLTextAreaElement
+    fireEvent.change(textarea, { target: { value: 'pending send' } })
+    fireEvent.click(screen.getByRole('button', { name: 'send' }))
+
+    expect(textarea.value).toBe('pending send')
+
+    await act(async () => {
+      resolveSend?.(true)
+    })
+
+    await waitFor(() => {
+      expect(textarea.value).toBe('')
     })
   })
 })

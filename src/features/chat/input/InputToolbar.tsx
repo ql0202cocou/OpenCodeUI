@@ -20,6 +20,7 @@ interface InputToolbarProps {
   onFilesSelected: (files: File[]) => void
 
   isStreaming?: boolean
+  isSending?: boolean
   onAbort?: () => void
 
   canSend: boolean
@@ -44,6 +45,7 @@ export function InputToolbar({
   fileCapabilities,
   onFilesSelected,
   isStreaming,
+  isSending = false,
   onAbort,
   canSend,
   onSend,
@@ -59,6 +61,7 @@ export function InputToolbar({
   // 根据模型能力计算支持的文件类型
   const caps = fileCapabilities ?? { image: false, pdf: false, audio: false, video: false }
   const supportsAnyFile = caps.image || caps.pdf || caps.audio || caps.video
+  const controlsDisabled = isSending
 
   // 动态构建 HTML accept 和 Tauri filter
   const { acceptString, tauriFilters } = useMemo(() => {
@@ -192,6 +195,7 @@ export function InputToolbar({
             <button
               ref={agentTriggerRef}
               onClick={() => setAgentMenuOpen(!agentMenuOpen)}
+              disabled={controlsDisabled}
               className="flex items-center gap-1.5 px-2 py-1.5 text-sm rounded-lg transition-all duration-150 hover:bg-bg-200 active:scale-95 cursor-pointer min-w-0 overflow-hidden w-full"
               title={
                 currentAgent
@@ -248,6 +252,7 @@ export function InputToolbar({
             <button
               ref={variantTriggerRef}
               onClick={() => setVariantMenuOpen(!variantMenuOpen)}
+              disabled={controlsDisabled}
               className="flex items-center gap-1.5 px-2 py-1.5 text-sm rounded-lg transition-all duration-150 hover:bg-bg-200 active:scale-95 cursor-pointer min-w-0 overflow-hidden w-full"
               title={selectedVariant ? selectedVariant.charAt(0).toUpperCase() + selectedVariant.slice(1) : 'Default'}
             >
@@ -317,17 +322,22 @@ export function InputToolbar({
                 }}
               />
             )}
-            <IconButton aria-label="Attach file" onClick={handleFileClick}>
+            <IconButton aria-label="Attach file" disabled={controlsDisabled} onClick={handleFileClick}>
               <PaperclipIcon />
             </IconButton>
           </>
         </AnimatedPresence>
-        {!canSend && isStreaming ? (
+        {!canSend && isStreaming && !isSending ? (
           <IconButton aria-label="Stop generation" variant="solid" onClick={onAbort}>
             <StopIcon />
           </IconButton>
         ) : (
-          <IconButton aria-label="Send message" variant="solid" disabled={!canSend} onClick={onSend}>
+          <IconButton
+            aria-label={isSending ? 'Sending message' : 'Send message'}
+            variant="solid"
+            disabled={!canSend || isSending}
+            onClick={onSend}
+          >
             <SendIcon />
           </IconButton>
         )}

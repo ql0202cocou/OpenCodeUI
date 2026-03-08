@@ -7,8 +7,9 @@ import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso'
 import { MessageRenderer } from '../message'
 import { messageStore } from '../../store'
 import { SpinnerIcon } from '../../components/Icons'
-import type { Message, Part } from '../../types/message'
+import type { Message } from '../../types/message'
 import { RetryStatusInline, type RetryStatusInlineData } from './RetryStatusInline'
+import { buildVisibleMessageEntries } from './chatAreaVisibility'
 import {
   VIRTUOSO_START_INDEX,
   SCROLL_CHECK_INTERVAL_MS,
@@ -56,137 +57,6 @@ export type ChatAreaHandle = {
   scrollToMessageIndex: (index: number) => void
   /** 按消息 ID 滚动（避免渲染合并导致的索引漂移） */
   scrollToMessageId: (messageId: string) => void
-}
-
-// 检查消息是否有可见内容
-function messageHasContent(msg: Message): boolean {
-  if (msg.parts.length === 0) {
-    // 有错误的 assistant 消息：中止类错误不显示，其他错误（API错误等）需要展示给用户
-    if (msg.info.role === 'assistant' && 'error' in msg.info && msg.info.error) {
-      return msg.info.error.name !== 'MessageAbortedError'
-    }
-    return true
-  }
-  return msg.parts.some(part => {
-    switch (part.type) {
-      case 'text':
-        return part.text?.trim().length > 0
-      case 'reasoning':
-        return part.text?.trim().length > 0
-      case 'tool':
-      case 'file':
-      case 'agent':
-      case 'step-finish':
-      case 'subtask':
-        return true
-      default:
-        return false
-    }
-  })
-}
-
-const INFRA_TYPES = new Set(['step-start', 'step-finish', 'snapshot', 'patch'])
-
-function partHasVisibleText(part: Part): boolean {
-  return (part.type === 'text' || part.type === 'reasoning') && part.text.trim().length > 0
-}
-
-/** assistant 消息最后一个有意义的 part 是否为 tool（跳过基础设施和空内容） */
-function endsWithTool(msg: Message): boolean {
-  if (msg.info.role !== 'assistant') return false
-  for (let i = msg.parts.length - 1; i >= 0; i--) {
-    const p = msg.parts[i]
-    if (INFRA_TYPES.has(p.type)) continue
-    if ((p.type === 'text' || p.type === 'reasoning') && !partHasVisibleText(p)) continue
-    return p.type === 'tool'
-  }
-  return false
-}
-
-/** 后续 assistant 消息是否为纯工具调用（无可见正文、无可见思考） */
-function isToolOnlyFollowUp(msg: Message): boolean {
-  if (msg.info.role !== 'assistant') return false
-  let hasTool = false
-  for (const p of msg.parts) {
-    if (p.type === 'tool') {
-      hasTool = true
-      continue
-    }
-    if (INFRA_TYPES.has(p.type)) continue
-    if ((p.type === 'text' || p.type === 'reasoning') && !partHasVisibleText(p)) continue
-    return false
-  }
-  return hasTool
-}
-
-/**
- * 后续 assistant 消息是否可以作为合并链的尾部：
- * - 没有可见 thinking
- * - 有 tool 调用
- * - 所有可见正文都出现在最后一个 tool 之后（即 tool...tool...text 的顺序）
- * 例: [tool, tool, text] ✓ — [text, tool] ✗ — [tool, text, tool] ✗
- */
-function isMergeableTrailing(msg: Message): boolean {
-  if (msg.info.role !== 'assistant') return false
-  // 有可见 thinking → 新思考周期，不合并
-  for (const p of msg.parts) {
-    if (p.type === 'reasoning' && partHasVisibleText(p)) return false
-  }
-  // 找最后一个 tool 的位置（按 parts 数组索引）
-  let lastToolIdx = -1
-  for (let i = msg.parts.length - 1; i >= 0; i--) {
-    if (msg.parts[i].type === 'tool') {
-      lastToolIdx = i
-      break
-    }
-  }
-  if (lastToolIdx < 0) return false // 没有 tool，不算
-  // 所有可见 text 都必须在 lastToolIdx 之后
-  for (let i = 0; i < lastToolIdx; i++) {
-    const p = msg.parts[i]
-    if (p.type === 'text' && partHasVisibleText(p)) return false
-  }
-  return true
-}
-
-/**
- * 合并连续的 assistant 消息：
- * - anchor: 一条以 tool 结尾的 assistant 消息
- * - 中间: 纯工具后续消息（isToolOnlyFollowUp）全部吸收
- * - 尾部: 没有可见 thinking、正文只在 tool 之后的消息（isMergeableTrailing）也可吸收
- * 合并后在渲染层作为同一条消息处理
- */
-function mergeConsecutiveToolMessages(messages: Message[]): Message[] {
-  const result: Message[] = []
-  for (let i = 0; i < messages.length; i++) {
-    const msg = messages[i]
-    if (!endsWithTool(msg)) {
-      result.push(msg)
-      continue
-    }
-    // 贪心吸收后续可合并消息
-    let j = i + 1
-    while (j < messages.length) {
-      if (isToolOnlyFollowUp(messages[j])) {
-        // 纯工具中间消息，继续吸收
-        j++
-      } else if (isMergeableTrailing(messages[j])) {
-        // 尾部消息（tool + trailing text），吸收后停止
-        j++
-        break
-      } else {
-        break
-      }
-    }
-    if (j === i + 1) {
-      result.push(msg)
-    } else {
-      const tailParts = messages.slice(i + 1, j).flatMap(m => m.parts)
-      result.push({ ...msg, parts: [...msg.parts, ...tailParts] })
-      i = j - 1
-    }
-  }
-  return result
 }
 
 // 大数字作为起始索引，允许向前 prepend
@@ -355,10 +225,8 @@ export const ChatArea = memo(
       }, [onLoadMore, sessionId, triggerNoMoreHint, prependedCount, hasMoreHistory])
 
       // 过滤空消息 + 合并连续工具 assistant 消息
-      const visibleMessages = useMemo(
-        () => mergeConsecutiveToolMessages(messages.filter(messageHasContent)),
-        [messages],
-      )
+      const visibleMessageEntries = useMemo(() => buildVisibleMessageEntries(messages), [messages])
+      const visibleMessages = useMemo(() => visibleMessageEntries.map(entry => entry.message), [visibleMessageEntries])
 
       // 计算每个回合的总时长：user.created → 最后一条 assistant.completed
       // 只在回合最后一条 assistant 消息上标记
@@ -386,6 +254,8 @@ export const ChatArea = memo(
       // 用 ref 追踪最新的消息列表和回调，供 handleRangeChanged 稳定引用
       const visibleMessagesRef = useRef(visibleMessages)
       visibleMessagesRef.current = visibleMessages
+      const visibleMessageEntriesRef = useRef(visibleMessageEntries)
+      visibleMessageEntriesRef.current = visibleMessageEntries
       const onVisibleMessageIdsChangeRef = useRef(onVisibleMessageIdsChange)
       onVisibleMessageIdsChangeRef.current = onVisibleMessageIdsChange
 
@@ -394,13 +264,13 @@ export const ChatArea = memo(
       const handleRangeChanged = useCallback((range: { startIndex: number; endIndex: number }) => {
         const cb = onVisibleMessageIdsChangeRef.current
         if (!cb) return
-        const msgs = visibleMessagesRef.current
+        const entries = visibleMessageEntriesRef.current
         const start = Math.max(0, range.startIndex - MESSAGE_PREFETCH_BUFFER)
-        const end = Math.min(msgs.length - 1, range.endIndex + MESSAGE_PREFETCH_BUFFER)
+        const end = Math.min(entries.length - 1, range.endIndex + MESSAGE_PREFETCH_BUFFER)
         const ids: string[] = []
         for (let i = start; i <= end; i++) {
-          const id = msgs[i]?.info.id
-          if (id) ids.push(id)
+          const sourceIds = entries[i]?.sourceIds
+          if (sourceIds?.length) ids.push(...sourceIds)
         }
         cb(ids)
       }, [])

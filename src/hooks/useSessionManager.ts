@@ -93,7 +93,7 @@ export function useSessionManager({ sessionId, directory, onLoadComplete, onErro
       // 检查是否已有消息（SSE 可能已经推送了）
       const existingState = messageStore.getSessionState(sid)
       const hasExistingMessages = existingState && existingState.messages.length > 0
-      const hasLoadedBaseline = existingState?.loadState === 'loaded'
+      const hasLoadedBaseline = existingState?.loadState === 'loaded' && !existingState?.isStale
 
       // 如果已经有消息且正在 streaming，不能覆盖消息，但仍需加载元数据
       // 仅在「已经完整加载过」时才跳过覆盖；
@@ -148,6 +148,7 @@ export function useSessionManager({ sessionId, directory, onLoadComplete, onErro
         const shouldKeepStreamingOnly =
           !force &&
           !!currentState &&
+          !currentState.isStale &&
           currentState.loadState === 'loaded' &&
           currentState.messages.length > apiMessages.length
 
@@ -423,7 +424,7 @@ export function useSessionManager({ sessionId, directory, onLoadComplete, onErro
 
     if (sessionId) {
       const cached = messageStore.getSessionState(sessionId)
-      const canUseCached = !!cached && cached.loadState === 'loaded' && cached.messages.length > 0
+      const canUseCached = !!cached && cached.loadState === 'loaded' && !cached.isStale && cached.messages.length > 0
 
       if (canUseCached) {
         const cachedLimit = Math.max(INITIAL_MESSAGE_LIMIT, cached.messages.length)

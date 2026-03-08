@@ -38,9 +38,13 @@ export interface CollapsedDialogInfo {
 }
 
 export interface InputBoxProps {
-  onSend: (text: string, attachments: Attachment[], options?: { agent?: string; variant?: string }) => void
+  onSend: (
+    text: string,
+    attachments: Attachment[],
+    options?: { agent?: string; variant?: string },
+  ) => Promise<boolean> | boolean
   onAbort?: () => void
-  onCommand?: (command: string) => void // 斜杠命令回调，接收完整命令字符串如 "/help"
+  onCommand?: (command: string) => Promise<boolean> | boolean // 斜杠命令回调，接收完整命令字符串如 "/help"
   onNewChat?: () => void // 新建对话回调
   disabled?: boolean
   isStreaming?: boolean
@@ -135,6 +139,7 @@ function InputBoxComponent({
   const [text, setText] = useState('')
   // 附件状态（图片、文件、文件夹、agent）
   const [attachments, setAttachments] = useState<Attachment[]>([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // @ Mention 状态
   const [mentionOpen, setMentionOpen] = useState(false)
@@ -307,7 +312,7 @@ function InputBoxComponent({
           textareaRef.current.setSelectionRange(revertedText.length, revertedText.length)
         }
       })
-    } else if (prevRevertedTextRef.current !== undefined && revertedText === undefined) {
+    } else if (prevRevertedTextRef.current !== undefined && revertedText === undefined && !isSubmitting) {
       frameId = requestAnimationFrame(() => {
         setText('')
         setAttachments([])
@@ -321,7 +326,7 @@ function InputBoxComponent({
         cancelAnimationFrame(frameId)
       }
     }
-  }, [revertedText, revertedAttachments])
+  }, [revertedText, revertedAttachments, isSubmitting])
 
   // 自动调整 textarea 高度
   useEffect(() => {
@@ -430,27 +435,59 @@ function InputBoxComponent({
   }, [attachments.length, resetAttachmentRailState, syncAttachmentRailState])
 
   // 计算
-  const canSend = (text.trim().length > 0 || attachments.length > 0) && !disabled
+  const inputDisabled = !!disabled || isSubmitting
+  const canSend = (text.trim().length > 0 || attachments.length > 0) && !inputDisabled
 
   // ============================================
   // Handlers
   // ============================================
 
+  const resetDraft = useCallback(() => {
+    setText('')
+    setAttachments([])
+    historyIndexRef.current = -1
+  }, [])
+
+  const runSubmit = useCallback(
+    async (submit: () => Promise<boolean | void> | boolean | void, onSuccess?: () => void) => {
+      if (isSubmitting) return false
+
+      setIsSubmitting(true)
+      try {
+        const result = await submit()
+        if (result === false) {
+          return false
+        }
+
+        onSuccess?.()
+        return true
+      } finally {
+        setIsSubmitting(false)
+      }
+    },
+    [isSubmitting],
+  )
+
   const handleSend = useCallback(() => {
-    if (!canSend) return
+    if (!canSend || isSubmitting) return
 
     // 检测 command attachment
     const commandAttachment = attachments.find(a => a.type === 'command')
     if (commandAttachment && commandAttachment.commandName) {
+      if (!onCommand) return
+
       // 提取命令后的参数文本
       const textRange = commandAttachment.textRange
       const afterCommand = textRange ? text.slice(textRange.end).trim() : ''
       const commandStr = `/${commandAttachment.commandName}${afterCommand ? ' ' + afterCommand : ''}`
 
-      onCommand?.(commandStr)
-      setText('')
-      setAttachments([])
-      onClearRevert?.()
+      void runSubmit(
+        () => onCommand(commandStr),
+        () => {
+          resetDraft()
+          onClearRevert?.()
+        },
+      )
       return
     }
 
@@ -458,17 +495,27 @@ function InputBoxComponent({
     const agentAttachment = attachments.find(a => a.type === 'agent')
     const mentionedAgent = agentAttachment?.agentName
 
-    onSend(text, attachments, {
-      agent: mentionedAgent || selectedAgent,
-      variant: selectedVariant,
-    })
-
-    // 清空
-    setText('')
-    setAttachments([])
-    historyIndexRef.current = -1
-    onClearRevert?.()
-  }, [canSend, text, attachments, selectedAgent, selectedVariant, onSend, onCommand, onClearRevert])
+    void runSubmit(
+      () =>
+        onSend(text, attachments, {
+          agent: mentionedAgent || selectedAgent,
+          variant: selectedVariant,
+        }),
+      resetDraft,
+    )
+  }, [
+    attachments,
+    canSend,
+    isSubmitting,
+    onClearRevert,
+    onCommand,
+    onSend,
+    resetDraft,
+    runSubmit,
+    selectedAgent,
+    selectedVariant,
+    text,
+  ])
 
   // 更新 @ 查询文本（用于进入/退出文件夹）
   const updateMentionQuery = useCallback(
@@ -756,12 +803,17 @@ function InputBoxComponent({
   const handleSlashSelect = useCallback(
     (command: Command) => {
       if (command.source === 'frontend') {
-        onCommand?.(`/${command.name}`)
-        setText('')
-        setAttachments([])
-        setSlashOpen(false)
-        onClearRevert?.()
-        requestAnimationFrame(() => textareaRef.current?.focus())
+        if (!onCommand) return
+
+        void runSubmit(
+          () => onCommand(`/${command.name}`),
+          () => {
+            resetDraft()
+            setSlashOpen(false)
+            onClearRevert?.()
+            requestAnimationFrame(() => textareaRef.current?.focus())
+          },
+        )
         return
       }
 
@@ -800,7 +852,7 @@ function InputBoxComponent({
         textareaRef.current.focus()
       })
     },
-    [text, slashStartIndex, slashQuery, onCommand, onClearRevert],
+    [text, slashStartIndex, slashQuery, onCommand, onClearRevert, resetDraft, runSubmit],
   )
 
   const handleSlashClose = useCallback(() => {
@@ -811,7 +863,7 @@ function InputBoxComponent({
   // 通用文件上传 — 根据模型能力判断是否接受
   const handleFilesSelected = useCallback(
     async (files: File[]) => {
-      if (files.length === 0 || !supportsAnyFile) return
+      if (files.length === 0 || !supportsAnyFile || isSubmitting) return
 
       const nextAttachments: Attachment[] = []
 
@@ -840,12 +892,14 @@ function InputBoxComponent({
         setAttachments(prev => [...prev, ...nextAttachments])
       }
     },
-    [supportsAnyFile, fileCaps],
+    [supportsAnyFile, fileCaps, isSubmitting],
   )
 
   // 删除附件
   const handleRemoveAttachment = useCallback(
     (id: string) => {
+      if (isSubmitting) return
+
       const attachment = attachments.find(a => a.id === id)
       if (!attachment) return
 
@@ -859,7 +913,7 @@ function InputBoxComponent({
 
       setAttachments(prev => prev.filter(a => a.id !== id))
     },
-    [attachments, text],
+    [attachments, isSubmitting, text],
   )
 
   // 粘贴处理 — 根据模型能力过滤可粘贴的文件类型
@@ -1162,7 +1216,7 @@ function InputBoxComponent({
                                 attachments={attachments}
                                 onRemove={handleRemoveAttachment}
                                 variant="rail"
-                                className="pr-4"
+                                className={isSubmitting ? 'pr-4 pointer-events-none opacity-70' : 'pr-4'}
                               />
                             </div>
 
@@ -1189,6 +1243,7 @@ function InputBoxComponent({
                         onScroll={handleScroll}
                         onFocus={handleFocus}
                         onBlur={handleBlur}
+                        disabled={inputDisabled}
                         placeholder={
                           isMobile ? 'Reply to Agent...' : 'Reply to Agent (type @ to mention, / for commands)'
                         }
@@ -1213,6 +1268,7 @@ function InputBoxComponent({
                       fileCapabilities={fileCaps}
                       onFilesSelected={handleFilesSelected}
                       isStreaming={isStreaming}
+                      isSending={isSubmitting}
                       onAbort={onAbort}
                       canSend={canSend || false}
                       onSend={handleSend}

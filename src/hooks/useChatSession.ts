@@ -234,6 +234,8 @@ export function useChatSession({ chatAreaRef, currentModel, refetchModels }: Use
         // 应用内 toast 已在 useGlobalEvents 中统一处理
       },
       onReconnected: _reason => {
+        messageStore.markAllSessionsStale()
+
         // SSE 重连后重新加载当前会话，补齐断连期间可能丢失的消息
         if (routeSessionId) {
           // 使用 force 模式，确保覆盖本地可能不完整的数据
@@ -255,7 +257,11 @@ export function useChatSession({ chatAreaRef, currentModel, refetchModels }: Use
     (ids: string[]) => {
       if (!routeSessionId || ids.length === 0) return
       messageStore.prefetchMessageParts(routeSessionId, ids)
-      messageStore.evictMessageParts(routeSessionId, ids)
+
+      const sessionState = messageStore.getSessionState(routeSessionId)
+      if (!sessionState?.isStreaming) {
+        messageStore.evictMessageParts(routeSessionId, ids)
+      }
     },
     [routeSessionId],
   )
@@ -356,29 +362,25 @@ export function useChatSession({ chatAreaRef, currentModel, refetchModels }: Use
     async (content: string, attachments: Attachment[], options?: { agent?: string; variant?: string }) => {
       if (!currentModel) {
         handleError('send message', new Error('No model selected'))
-        return
-      }
-
-      // Clear revert state and truncate old messages
-      if (routeSessionId) {
-        messageStore.truncateAfterRevert(routeSessionId)
-      }
-
-      // Set streaming
-      if (routeSessionId) {
-        messageStore.setStreaming(routeSessionId, true)
+        return false
       }
 
       let sessionId = routeSessionId
+      let rollbackSnapshot = routeSessionId ? messageStore.createSendRollbackSnapshot(routeSessionId) : null
 
       try {
         if (!sessionId) {
           const newSession = await createSession()
           sessionId = newSession.id
           messageStore.setCurrentSession(sessionId)
-          messageStore.setStreaming(sessionId, true)
           navigateToSession(sessionId)
         }
+
+        if (rollbackSnapshot) {
+          messageStore.truncateAfterRevert(sessionId)
+        }
+
+        messageStore.setStreaming(sessionId, true)
 
         await sendMessageAsync({
           sessionId,
@@ -392,11 +394,20 @@ export function useChatSession({ chatAreaRef, currentModel, refetchModels }: Use
           variant: options?.variant,
           directory: effectiveDirectory,
         })
+
+        return true
       } catch (error) {
         handleError('send message', error)
         if (sessionId) {
-          messageStore.setStreaming(sessionId, false)
+          if (rollbackSnapshot) {
+            messageStore.restoreSendRollback(sessionId, rollbackSnapshot)
+            rollbackSnapshot = null
+          } else {
+            messageStore.setStreaming(sessionId, false)
+          }
         }
+
+        return false
       }
     },
     [currentModel, routeSessionId, effectiveDirectory, navigateToSession, createSession],
@@ -433,12 +444,12 @@ export function useChatSession({ chatAreaRef, currentModel, refetchModels }: Use
       const command = spaceIndex > 0 ? withoutSlash.slice(0, spaceIndex) : withoutSlash
       const args = spaceIndex > 0 ? withoutSlash.slice(spaceIndex + 1) : ''
 
-      if (!command) return
+      if (!command) return false
 
       if (command === 'new') {
         navigateHome()
         handleNewChat()
-        return
+        return true
       }
 
       let sessionId = routeSessionId
@@ -455,19 +466,21 @@ export function useChatSession({ chatAreaRef, currentModel, refetchModels }: Use
         if (command === 'compact') {
           if (!currentModel) {
             handleError('execute command', new Error('No model selected'))
-            return
+            return false
           }
           await summarizeSession(
             sessionId,
             { providerID: currentModel.providerId, modelID: currentModel.id },
             effectiveDirectory,
           )
-          return
+          return true
         }
 
         await executeCommand(sessionId, command, args, effectiveDirectory)
+        return true
       } catch (err) {
         handleError('execute command', err)
+        return false
       }
     },
     [routeSessionId, effectiveDirectory, createSession, navigateToSession, currentModel, navigateHome, handleNewChat],
