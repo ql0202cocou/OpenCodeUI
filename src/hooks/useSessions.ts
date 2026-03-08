@@ -31,10 +31,6 @@ interface UseSessionsResult {
   create: (title?: string) => Promise<ApiSession>
   /** 删除会话 */
   remove: (sessionId: string) => Promise<void>
-  /** 本地更新会话 */
-  patchLocalSession: (sessionId: string, patch: Partial<ApiSession>) => void
-  /** 本地移除会话 */
-  removeLocalSession: (sessionId: string) => void
 }
 
 export function useSessions(options: UseSessionsOptions = {}): UseSessionsResult {
@@ -175,14 +171,6 @@ export function useSessions(options: UseSessionsOptions = {}): UseSessionsResult
     [normalizedDirectory],
   )
 
-  const patchLocalSession = useCallback((sessionId: string, patch: Partial<ApiSession>) => {
-    setSessions(prev => prev.map(session => (session.id === sessionId ? { ...session, ...patch } : session)))
-  }, [])
-
-  const removeLocalSession = useCallback((sessionId: string) => {
-    setSessions(prev => prev.filter(session => session.id !== sessionId))
-  }, [])
-
   return {
     sessions,
     isLoading,
@@ -195,7 +183,5 @@ export function useSessions(options: UseSessionsOptions = {}): UseSessionsResult
     refresh,
     create,
     remove,
-    patchLocalSession,
-    removeLocalSession,
   }
 }

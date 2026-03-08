@@ -18,8 +18,6 @@ interface SessionListProps {
   onRename: (sessionId: string, newTitle: string) => void
   onLoadMore: () => void
   onNewChat: () => void
-  loadMoreMode?: 'scroll' | 'button'
-  loadMoreLabel?: string
   showHeader?: boolean
   grouped?: boolean
   density?: 'default' | 'compact'
@@ -49,8 +47,6 @@ export function SessionList({
   onRename,
   onLoadMore,
   onNewChat,
-  loadMoreMode = 'scroll',
-  loadMoreLabel = 'Show more',
   showHeader = true,
   grouped = true,
   density = 'default',
@@ -70,7 +66,6 @@ export function SessionList({
 
   // 滚动加载
   const handleScroll = useCallback(() => {
-    if (loadMoreMode !== 'scroll') return
     const el = listRef.current
     if (!el || isLoadingMore || !hasMore) return
 
@@ -78,15 +73,14 @@ export function SessionList({
     if (scrollHeight - scrollTop - clientHeight < 100) {
       onLoadMore()
     }
-  }, [isLoadingMore, hasMore, onLoadMore, loadMoreMode])
+  }, [isLoadingMore, hasMore, onLoadMore])
 
   useEffect(() => {
-    if (loadMoreMode !== 'scroll') return
     const el = listRef.current
     if (!el) return
     el.addEventListener('scroll', handleScroll)
     return () => el.removeEventListener('scroll', handleScroll)
-  }, [handleScroll, loadMoreMode])
+  }, [handleScroll])
 
   // 分组逻辑
   const groupedSessions = useMemo(() => {
@@ -220,17 +214,6 @@ export function SessionList({
         {isLoadingMore && (
           <div className="flex items-center justify-center py-2">
             <LoadingSpinner size="sm" />
-          </div>
-        )}
-
-        {loadMoreMode === 'button' && hasMore && !isLoadingMore && sessions.length > 0 && (
-          <div className="px-2 pb-1 pt-1">
-            <button
-              onClick={onLoadMore}
-              className="w-full rounded-md px-2 py-1.5 text-[11px] font-medium text-text-400 transition-colors hover:bg-bg-200/35 hover:text-text-200"
-            >
-              {loadMoreLabel}
-            </button>
           </div>
         )}
       </div>

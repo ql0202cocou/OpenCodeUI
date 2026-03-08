@@ -6,7 +6,9 @@ import { useInView } from '../../../hooks/useInView'
 import { getDirectoryName, isSameDirectory } from '../../../utils'
 import { SessionList } from '../../sessions'
 
-const DIRECTORY_PAGE_SIZE = 6
+const DIRECTORY_PAGE_SIZE = 8
+const MAX_VISIBLE_SESSIONS = 6
+const SESSION_LIST_MAX_HEIGHT = MAX_VISIBLE_SESSIONS * 40 + 12
 const NOOP = () => {}
 
 export interface FolderRecentProject {
@@ -119,7 +121,7 @@ function FolderRecentSection({
 }: FolderRecentSectionProps) {
   const { ref, inView } = useInView({ rootMargin: '180px 0px', triggerOnce: true })
   const shouldLoad = inView || isExpanded
-  const { sessions, isLoading, isLoadingMore, hasMore, loadMore, patchLocalSession, removeLocalSession } = useSessions({
+  const { sessions, isLoading, isLoadingMore, hasMore, loadMore, refresh } = useSessions({
     directory: project.worktree,
     pageSize: DIRECTORY_PAGE_SIZE,
     enabled: shouldLoad,
@@ -130,9 +132,9 @@ function FolderRecentSection({
       const session = sessions.find(item => item.id === sessionId)
       if (!session) return
       await onRenameSession(session, newTitle)
-      patchLocalSession(sessionId, { title: newTitle })
+      await refresh()
     },
-    [sessions, onRenameSession, patchLocalSession],
+    [sessions, onRenameSession, refresh],
   )
 
   const handleDelete = useCallback(
@@ -140,9 +142,9 @@ function FolderRecentSection({
       const session = sessions.find(item => item.id === sessionId)
       if (!session) return
       await onDeleteSession(session)
-      removeLocalSession(sessionId)
+      await refresh()
     },
-    [sessions, onDeleteSession, removeLocalSession],
+    [sessions, onDeleteSession, refresh],
   )
 
   const projectName = project.name || getDirectoryName(project.worktree) || project.worktree
@@ -194,8 +196,7 @@ function FolderRecentSection({
               density="compact"
               variant="tree"
               showStats={false}
-              loadMoreMode="button"
-              loadMoreLabel={isLoadingMore ? 'Loading...' : 'Show more'}
+              scrollMaxHeight={SESSION_LIST_MAX_HEIGHT}
               emptyStateLabel="No chats in this folder"
             />
           </div>
