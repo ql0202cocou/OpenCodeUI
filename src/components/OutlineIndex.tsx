@@ -330,7 +330,7 @@ const DesktopFisheye = memo(function DesktopFisheye({ entries, onSelect }: Fishe
         >
           <div
             data-label
-            className="absolute right-full mr-2.5 text-[13px] leading-none text-text-200 whitespace-nowrap pointer-events-none"
+            className="absolute right-full mr-2.5 text-[13px] leading-none text-text-200 whitespace-nowrap cursor-pointer"
             style={{ opacity: 0, transform: 'translateX(10px)', visibility: 'hidden' }}
           >
             {entry.title}
@@ -364,6 +364,12 @@ const MobileFisheye = memo(function MobileFisheye({ entries, onSelect }: Fisheye
   const isTouchingRef = useRef(false)
   const prevFocusIdxRef = useRef(-1)
   const cachedRef = useRef<CachedItem[] | null>(null)
+
+  // 稳定 ref，供原生事件回调读取最新值
+  const entriesRef = useRef(entries)
+  entriesRef.current = entries
+  const onSelectRef = useRef(onSelect)
+  onSelectRef.current = onSelect
 
   useEffect(() => {
     strengthsRef.current = entries.map(() => 0)
@@ -404,7 +410,7 @@ const MobileFisheye = memo(function MobileFisheye({ entries, onSelect }: Fisheye
         vibrate()
         const titleEl = overlayTitleRef.current
         if (titleEl) {
-          titleEl.textContent = entries[focusIndex].title
+          titleEl.textContent = entriesRef.current[focusIndex]?.title ?? ''
           titleEl.style.opacity = '1'
           titleEl.style.transform = 'translateY(0px)'
         }
@@ -423,44 +429,63 @@ const MobileFisheye = memo(function MobileFisheye({ entries, onSelect }: Fisheye
         setOverlayVisible(false)
       }
     },
-    [entries, getItems, vibrate],
+    [getItems, vibrate],
   )
 
-  const ensureLoop = useCallback(() => {
+  const ensureLoopRef = useRef((..._: unknown[]) => {})
+  ensureLoopRef.current = () => {
     cancelAnimationFrame(rafIdRef.current)
     rafIdRef.current = requestAnimationFrame(runLoop)
-  }, [runLoop])
+  }
 
-  const handleTouchStart = useCallback(
-    (e: React.TouchEvent) => {
+  // 原生 addEventListener({ passive: false }) 才能 preventDefault
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+
+    const onTouchStart = (e: TouchEvent) => {
       e.preventDefault()
       isTouchingRef.current = true
       prevFocusIdxRef.current = -1
       touchYRef.current = e.touches[0].clientY
       setOverlayVisible(true)
-      ensureLoop()
-    },
-    [ensureLoop],
-  )
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    e.preventDefault()
-    touchYRef.current = e.touches[0].clientY
-  }, [])
-
-  const handleTouchEnd = useCallback(() => {
-    const idx = prevFocusIdxRef.current
-    if (idx >= 0 && idx < entries.length) onSelect(entries[idx].messageId)
-    isTouchingRef.current = false
-    touchYRef.current = null
-    prevFocusIdxRef.current = -1
-    const titleEl = overlayTitleRef.current
-    if (titleEl) {
-      titleEl.style.opacity = '0'
-      titleEl.style.transform = 'translateY(4px)'
+      ensureLoopRef.current()
     }
-    ensureLoop()
-  }, [entries, onSelect, ensureLoop])
+
+    const onTouchMove = (e: TouchEvent) => {
+      e.preventDefault()
+      touchYRef.current = e.touches[0].clientY
+    }
+
+    const onTouchEnd = () => {
+      const idx = prevFocusIdxRef.current
+      const currentEntries = entriesRef.current
+      if (idx >= 0 && idx < currentEntries.length) {
+        onSelectRef.current(currentEntries[idx].messageId)
+      }
+      isTouchingRef.current = false
+      touchYRef.current = null
+      prevFocusIdxRef.current = -1
+      const titleEl = overlayTitleRef.current
+      if (titleEl) {
+        titleEl.style.opacity = '0'
+        titleEl.style.transform = 'translateY(4px)'
+      }
+      ensureLoopRef.current()
+    }
+
+    el.addEventListener('touchstart', onTouchStart, { passive: false })
+    el.addEventListener('touchmove', onTouchMove, { passive: false })
+    el.addEventListener('touchend', onTouchEnd)
+    el.addEventListener('touchcancel', onTouchEnd)
+
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart)
+      el.removeEventListener('touchmove', onTouchMove)
+      el.removeEventListener('touchend', onTouchEnd)
+      el.removeEventListener('touchcancel', onTouchEnd)
+    }
+  }, [])
 
   useEffect(() => () => cancelAnimationFrame(rafIdRef.current), [])
 
@@ -485,10 +510,6 @@ const MobileFisheye = memo(function MobileFisheye({ entries, onSelect }: Fisheye
       <div
         ref={containerRef}
         className="absolute right-0 top-1/2 -translate-y-1/2 z-[15] flex flex-col items-end pr-1.5 pl-4 py-4 select-none"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onTouchCancel={handleTouchEnd}
       >
         {entries.map(entry => (
           <div
