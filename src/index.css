@@ -735,6 +735,17 @@ textarea.custom-scrollbar::-webkit-scrollbar-thumb {
   animation: fade-in 200ms ease-out;
 }
 
+/* 滚动容器隐藏（containerReady=false 时），scroll-to-bottom 在此状态下完成 */
+.chat-scroll-hidden {
+  opacity: 0;
+}
+
+/* Session 加载 spinner — 延迟 150ms 才显示，快速加载时不闪烁 */
+.session-loading-indicator {
+  opacity: 0;
+  animation: fade-in 200ms ease-out 150ms forwards;
+}
+
 /* Modal 缩放进入动画 */
 .animate-scale-in {
   animation: scale-in 200ms cubic-bezier(0.16, 1, 0.3, 1);

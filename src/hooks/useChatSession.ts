@@ -61,18 +61,11 @@ interface LiveRetryStatus {
 
 export function useChatSession({ chatAreaRef, currentModel, refetchModels }: UseChatSessionOptions) {
   // Store State
-  const {
-    messages,
-    isStreaming,
-    prependedCount,
-    sessionDirectory,
-    canUndo,
-    canRedo,
-    redoSteps,
-    revertedContent,
-    loadState,
-    hasMoreHistory,
-  } = useMessageStore()
+  // 注意：store 的 currentSessionId 通过 useEffect 切换（延迟一帧），
+  // 而 routeSessionId 通过路由立即变化。在切换瞬间两者不同步，
+  // 此时 store 返回的仍是旧 session 的数据。
+  // 下方 guard 确保不同步时返回安全默认值，避免下游组件误读旧数据。
+  const storeState = useMessageStore()
   const { statusMap } = useActiveSessionStore()
 
   // Agents
@@ -95,6 +88,21 @@ export function useChatSession({ chatAreaRef, currentModel, refetchModels }: Use
   const { sendNotification } = useNotification()
 
   const routeStatus = routeSessionId ? statusMap[routeSessionId] : undefined
+
+  // Session 同步 guard：store.currentSessionId 在 useEffect 中切换（延迟一帧），
+  // routeSessionId 通过路由立即变化。不同步时只覆盖 loadState 阻止 scroll-to-bottom 误触发，
+  // 其他字段保持旧值（反正在 opacity=0 下不可见，不会造成 spinner 闪烁等副作用）。
+  const isSessionSynced = storeState.sessionId === routeSessionId
+  const messages = storeState.messages
+  const isStreaming = storeState.isStreaming
+  const prependedCount = storeState.prependedCount
+  const sessionDirectory = storeState.sessionDirectory
+  const canUndo = isSessionSynced ? storeState.canUndo : false
+  const canRedo = isSessionSynced ? storeState.canRedo : false
+  const redoSteps = isSessionSynced ? storeState.redoSteps : 0
+  const revertedContent = isSessionSynced ? storeState.revertedContent : null
+  const hasMoreHistory = isSessionSynced ? storeState.hasMoreHistory : false
+  const loadState = isSessionSynced ? storeState.loadState : routeSessionId ? ('loading' as const) : ('idle' as const)
 
   // OpenAPI SessionStatus.retry: { attempt, message, next }
   const retryStatus = useMemo<LiveRetryStatus | null>(() => {

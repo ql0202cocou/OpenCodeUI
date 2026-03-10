@@ -113,8 +113,13 @@ export const ChatArea = memo(
       const prePrependRef = useRef<{ top: number; height: number; firstId: string } | null>(null)
 
       // ---- Session 切换 ----
-      const prevSessionIdRef = useRef(sessionId)
+      // 用 Symbol 做哨兵：首次 mount 时 prevSessionIdRef !== sessionId，
+      // 确保首次加载也走 "隐藏 → snap → 淡入" 通道
+      const SENTINEL = useRef(Symbol('init')).current
+      const prevSessionIdRef = useRef<string | null | undefined | symbol>(SENTINEL)
       const initialScrollDoneRef = useRef<string | null>(null)
+      // 容器可见性：隐藏状态下完成 scroll-to-bottom，就绪后淡入
+      const [containerReady, setContainerReady] = useState(false)
 
       // ---- 可见消息追踪 ----
       const visibilityObserverRef = useRef<IntersectionObserver | null>(null)
@@ -208,7 +213,9 @@ export const ChatArea = memo(
         if (!isStreaming) userScrolledAwayRef.current = false
       }, [isStreaming])
 
-      // Session 切换：重置滚动状态 + 淡入动画
+      // Session 切换 / 首次 mount：重置滚动状态 + 隐藏容器
+      // containerReady=false → 容器 opacity=0，所有 snap 在不可见状态下完成，
+      // 就绪后由 revealContainer 设 containerReady=true 触发淡入。
       useEffect(() => {
         if (sessionId === prevSessionIdRef.current) return
         prevSessionIdRef.current = sessionId
@@ -218,13 +225,7 @@ export const ChatArea = memo(
         suppressScrollRef.current = false
         visibleMsgIdsRef.current.clear()
         prePrependRef.current = null
-
-        const el = scrollContainerRef.current
-        if (el) {
-          el.classList.remove('animate-fade-in')
-          void el.offsetWidth // force reflow
-          el.classList.add('animate-fade-in')
-        }
+        setContainerReady(!sessionId) // 无 session（home）直接可见
       }, [sessionId])
 
       // 加载中清除浏览器残留的 scrollTop
@@ -234,26 +235,62 @@ export const ChatArea = memo(
         if (el) el.scrollTop = 0
       }, [sessionId, loadState])
 
+      // 滚动容器淡入（scroll-to-bottom 到位后 或 空 session / error）
+      const revealContainer = useCallback(() => {
+        setContainerReady(true)
+      }, [])
+
       // Session 加载完成后定位到底部（只执行一次）
-      // content-visibility: auto 首帧用估算高度，可见区域渲染后 scrollHeight 会变，
-      // 用 immediate + rAF + timeout 三级保证滚到真正的底部
+      // content-visibility: auto 首帧用估算高度（120px），渲染底部消息后 scrollHeight 才准确。
+      // 用 rAF 循环持续 snap，直到 scrollHeight 连续 3 帧不变（渲染稳定）或超时 1s，
+      // 整个过程在 opacity=0 下完成，到位后淡入显示。
       useEffect(() => {
-        if (!sessionId || loadState !== 'loaded') return
-        if (visibleMessages.length === 0) return
+        if (!sessionId) return
+
+        // 加载出错：直接恢复可见
+        if (loadState === 'error') {
+          revealContainer()
+          return
+        }
+
+        if (loadState !== 'loaded') return
+
+        // 空 session：无需滚动，直接淡入
+        if (visibleMessages.length === 0) {
+          revealContainer()
+          return
+        }
+
         if (initialScrollDoneRef.current === sessionId) return
         initialScrollDoneRef.current = sessionId
 
         const el = scrollContainerRef.current
         if (!el) return
 
-        const snap = () => {
+        let rafId: number
+        let lastHeight = 0
+        let stableFrames = 0
+        const STABLE_THRESHOLD = 3
+        const startTime = performance.now()
+
+        const tick = () => {
           el.scrollTop = el.scrollHeight
+          if (el.scrollHeight === lastHeight) {
+            stableFrames++
+          } else {
+            stableFrames = 0
+            lastHeight = el.scrollHeight
+          }
+          if (stableFrames >= STABLE_THRESHOLD || performance.now() - startTime > 1000) {
+            revealContainer()
+            return
+          }
+          rafId = requestAnimationFrame(tick)
         }
-        snap()
-        requestAnimationFrame(snap)
-        const timer = setTimeout(snap, 120)
-        return () => clearTimeout(timer)
-      }, [sessionId, loadState, visibleMessages.length])
+        tick()
+
+        return () => cancelAnimationFrame(rafId)
+      }, [sessionId, loadState, visibleMessages.length, revealContainer])
 
       // ============================================
       // 加载更多历史消息
@@ -528,10 +565,10 @@ export const ChatArea = memo(
 
       return (
         <div className="h-full overflow-hidden contain-strict relative">
-          {/* Session 加载中 spinner */}
+          {/* Session 加载中 spinner — 延迟 150ms 显示，避免快速加载时闪烁 */}
           {showSessionLoading && (
             <div className="absolute inset-0 z-10 flex items-center justify-center">
-              <div className="flex flex-col items-center gap-3 text-text-400 animate-in fade-in duration-300">
+              <div className="flex flex-col items-center gap-3 text-text-400 session-loading-indicator">
                 <SpinnerIcon size={24} className="animate-spin" />
                 <span className="text-sm">Loading session...</span>
               </div>
@@ -557,10 +594,12 @@ export const ChatArea = memo(
             </div>
           )}
 
-          {/* 滚动容器 — overflow-anchor: none 禁用浏览器锚定，由 useLayoutEffect 手动补偿 */}
+          {/* 滚动容器 — containerReady 控制可见性和淡入动画 */}
           <div
             ref={scrollContainerRef}
-            className="h-full overflow-y-auto custom-scrollbar animate-fade-in contain-content"
+            className={`h-full overflow-y-auto custom-scrollbar contain-content${
+              containerReady ? ' animate-fade-in' : ' chat-scroll-hidden'
+            }`}
             style={{ overflowAnchor: 'none' }}
           >
             {/* 顶部哨兵：IntersectionObserver 触发加载更多 */}
