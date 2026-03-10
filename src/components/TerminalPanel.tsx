@@ -9,6 +9,7 @@ import { PlusIcon, CloseIcon, TerminalIcon, ChevronDownIcon } from './Icons'
 import { layoutStore, useLayoutStore, type TerminalTab } from '../store/layoutStore'
 import { createPtySession, removePtySession, listPtySessions } from '../api/pty'
 import { logger } from '../utils/logger'
+import { uiErrorHandler } from '../utils'
 
 // 常量
 const MIN_HEIGHT = 100
@@ -56,7 +57,7 @@ export const TerminalPanel = memo(function TerminalPanel({ directory }: Terminal
           }
         }
       } catch (error) {
-        console.error('[TerminalPanel] Failed to restore sessions:', error)
+        uiErrorHandler('restore terminal sessions', error)
       } finally {
         setIsRestoring(false)
       }
@@ -78,7 +79,7 @@ export const TerminalPanel = memo(function TerminalPanel({ directory }: Terminal
       }
       layoutStore.addTerminalTab(tab)
     } catch (error) {
-      console.error('[TerminalPanel] Failed to create terminal:', error)
+      uiErrorHandler('create terminal', error)
     }
   }, [directory])
 

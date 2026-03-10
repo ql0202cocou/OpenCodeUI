@@ -6,6 +6,7 @@ import { createPtySession, removePtySession, listPtySessions } from '../api/pty'
 import { useMessageStore } from '../store'
 import { ResizablePanel } from './ui/ResizablePanel'
 import { logger } from '../utils/logger'
+import { uiErrorHandler } from '../utils'
 
 const Terminal = lazy(() => import('./Terminal').then(module => ({ default: module.Terminal })))
 const SessionChangesPanel = lazy(() =>
@@ -74,7 +75,7 @@ export const BottomPanel = memo(function BottomPanel({ directory }: BottomPanelP
           layoutStore.addTerminalTab(tab, false)
         }
       } catch (error) {
-        console.error('[BottomPanel] Failed to restore sessions:', error)
+        uiErrorHandler('restore terminal sessions', error)
       } finally {
         setIsRestoring(false)
       }
@@ -96,7 +97,7 @@ export const BottomPanel = memo(function BottomPanel({ directory }: BottomPanelP
       }
       layoutStore.addTerminalTab(tab)
     } catch (error) {
-      console.error('[BottomPanel] Failed to create terminal:', error)
+      uiErrorHandler('create terminal', error)
     }
   }, [directory])
 

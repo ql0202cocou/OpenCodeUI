@@ -4,6 +4,7 @@ import { TrashIcon, WifiIcon, WifiOffIcon, SpinnerIcon, PlugIcon, StopIcon } fro
 import { useServerStore, useIsMobile } from '../../../hooks'
 import { serviceStore, useServiceStore } from '../../../store/serviceStore'
 import { isTauri } from '../../../utils/tauri'
+import { apiErrorHandler } from '../../../utils'
 import { Toggle, SettingRow, SettingsCard } from './SettingsUI'
 
 export function ServiceSettings() {
@@ -63,7 +64,7 @@ export function ServiceSettings() {
       serviceStore.setRunning(true)
     } catch (e) {
       const msg = String(e)
-      console.error('[Service] Start failed:', msg)
+      apiErrorHandler('start service', msg)
       setServiceError(msg)
     } finally {
       serviceStore.setStarting(false)
@@ -78,7 +79,7 @@ export function ServiceSettings() {
       serviceStore.setStartedByUs(false)
       serviceStore.setRunning(false)
     } catch (e) {
-      console.error('[Service] Stop failed:', e)
+      apiErrorHandler('stop service', e)
     }
   }
 
@@ -94,7 +95,7 @@ export function ServiceSettings() {
         serviceStore.setStartedByUs(false)
       }
     } catch (e) {
-      console.error('[Service] Check failed:', e)
+      apiErrorHandler('check service', e)
     }
   }
 

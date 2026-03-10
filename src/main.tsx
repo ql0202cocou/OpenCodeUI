@@ -14,6 +14,7 @@ import { serviceStore } from './store/serviceStore'
 import { reconnectSSE } from './api/events'
 import { resetPathModeCache } from './utils/directoryUtils'
 import { isTauri } from './utils/tauri'
+import { apiErrorHandler, globalErrorHandler } from './utils/errorHandling'
 
 // Polyfill: randomUUID 在非 HTTPS 环境可能缺失（如局域网 HTTP）
 // 统一补齐，避免业务层 scattered fallback。
@@ -92,7 +93,7 @@ if (isTauri()) {
         })
         .catch(err => {
           serviceStore.setStarting(false)
-          console.error('[Service] Failed to auto-start opencode serve:', err)
+          apiErrorHandler('auto-start opencode serve', err)
         })
     })
   }
@@ -100,12 +101,12 @@ if (isTauri()) {
 
 // 全局错误处理 - 防止未捕获错误导致页面刷新
 window.addEventListener('error', event => {
-  console.error('[Global Error]', event.error)
+  globalErrorHandler('uncaught error', event.error)
   event.preventDefault()
 })
 
 window.addEventListener('unhandledrejection', event => {
-  console.error('[Unhandled Promise Rejection]', event.reason)
+  globalErrorHandler('unhandled promise rejection', event.reason)
   event.preventDefault()
 })
 

@@ -7,6 +7,7 @@ import { createPtySession, removePtySession } from '../api/pty'
 import type { TerminalTab } from '../store/layoutStore'
 import { ResizablePanel } from './ui/ResizablePanel'
 import { logger } from '../utils/logger'
+import { uiErrorHandler } from '../utils'
 
 const SessionChangesPanel = lazy(() =>
   import('./SessionChangesPanel').then(module => ({ default: module.SessionChangesPanel })),
@@ -64,7 +65,7 @@ export const RightPanel = memo(function RightPanel() {
       }
       layoutStore.addTerminalTab(tab, true, 'right')
     } catch (error) {
-      console.error('[RightPanel] Failed to create terminal:', error)
+      uiErrorHandler('create terminal', error)
     }
   }, [currentDirectory])
 

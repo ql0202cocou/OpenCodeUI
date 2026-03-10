@@ -13,6 +13,7 @@ import { getSessionDiff } from '../api/session'
 import type { FileDiff } from '../api/types'
 import { detectLanguage } from '../utils/languageUtils'
 import { ModalShell } from './ui/ModalShell'
+import { sessionErrorHandler } from '../utils'
 
 // ============================================
 // Types
@@ -67,7 +68,7 @@ export const MultiFileDiffModal = memo(function MultiFileDiffModal({
         })
         .catch(err => {
           if (cancelled || requestId !== requestIdRef.current) return
-          console.error('Failed to load session diff:', err)
+          sessionErrorHandler('load session diff', err)
           setError('Failed to load changes')
         })
         .finally(() => {

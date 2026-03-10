@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { isTauri } from '../utils/tauri'
+import { uiErrorHandler } from '../utils'
 
 /**
  * Tauri desktop only: 监听 Rust 侧的 close-requested 事件，
@@ -33,7 +34,7 @@ export function useCloseServiceDialog() {
       const { invoke } = await import('@tauri-apps/api/core')
       await invoke('confirm_close_app', { stopService })
     } catch (e) {
-      console.error('[CloseDialog] Failed to close app:', e)
+      uiErrorHandler('close app', e)
     }
   }, [])
 

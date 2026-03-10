@@ -21,6 +21,7 @@ import { useCloseServiceDialog } from './hooks/useCloseServiceDialog'
 import type { KeybindingHandlers } from './hooks/useKeybindings'
 import { keybindingStore } from './store/keybindingStore'
 import { layoutStore } from './store/layoutStore'
+import { uiErrorHandler } from './utils'
 import { restoreModelSelection } from './utils/sessionHelpers'
 import { findModelByKey } from './utils/modelUtils'
 import type { Attachment } from './api'
@@ -307,7 +308,7 @@ function App() {
       }
       layoutStore.addTerminalTab(tab, true)
     } catch (error) {
-      console.error('[App] Failed to create terminal:', error)
+      uiErrorHandler('create terminal', error)
     }
   }, [effectiveDirectory])
 

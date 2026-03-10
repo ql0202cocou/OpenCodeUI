@@ -290,7 +290,6 @@ export function useSessionManager({ sessionId, directory, onLoadComplete, onErro
         currentJson = nextJson
       }
     } catch (error) {
-      console.error('[SessionManager] loadMore:error', { sessionId, error })
       sessionErrorHandler('load more history', error)
     }
   }, [sessionId])
