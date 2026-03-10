@@ -9,7 +9,6 @@ import { ChatSettings } from './components/ChatSettings'
 import { NotificationSettings } from './components/NotificationSettings'
 import { ServiceSettings } from './components/ServiceSettings'
 import { ServersSettings } from './components/ServersSettings'
-import type { ThemeMode } from '../../hooks'
 
 const APP_VERSION_LABEL = `OpenCodeUI v${__APP_VERSION__}`
 
@@ -22,18 +21,7 @@ type SettingsTab = 'appearance' | 'chat' | 'notifications' | 'service' | 'server
 interface SettingsDialogProps {
   isOpen: boolean
   onClose: () => void
-  themeMode: ThemeMode
-  onThemeChange: (mode: ThemeMode, event?: React.MouseEvent) => void
-  isWideMode?: boolean
-  onToggleWideMode?: () => void
   initialTab?: SettingsTab | 'general'
-  // Theme preset
-  presetId?: string
-  onPresetChange?: (presetId: string, event?: React.MouseEvent) => void
-  availablePresets?: { id: string; name: string; description: string }[]
-  // Custom CSS
-  customCSS?: string
-  onCustomCSSChange?: (css: string) => void
 }
 
 // ============================================
@@ -88,44 +76,10 @@ const TAB_GROUPS: { label: string; tabs: SettingsTab[] }[] = [
 // Tab Content Router
 // ============================================
 
-function TabContent({
-  tab,
-  themeMode,
-  onThemeChange,
-  isWideMode,
-  onToggleWideMode,
-  presetId,
-  onPresetChange,
-  availablePresets,
-  customCSS,
-  onCustomCSSChange,
-}: {
-  tab: SettingsTab
-  themeMode: ThemeMode
-  onThemeChange: (mode: ThemeMode, event?: React.MouseEvent) => void
-  isWideMode?: boolean
-  onToggleWideMode?: () => void
-  presetId?: string
-  onPresetChange?: (presetId: string, event?: React.MouseEvent) => void
-  availablePresets?: { id: string; name: string; description: string }[]
-  customCSS?: string
-  onCustomCSSChange?: (css: string) => void
-}) {
+function TabContent({ tab }: { tab: SettingsTab }) {
   switch (tab) {
     case 'appearance':
-      return (
-        <AppearanceSettings
-          themeMode={themeMode}
-          onThemeChange={onThemeChange}
-          isWideMode={isWideMode}
-          onToggleWideMode={onToggleWideMode}
-          presetId={presetId}
-          onPresetChange={onPresetChange}
-          availablePresets={availablePresets}
-          customCSS={customCSS}
-          onCustomCSSChange={onCustomCSSChange}
-        />
-      )
+      return <AppearanceSettings />
     case 'chat':
       return <ChatSettings />
     case 'notifications':
@@ -145,20 +99,7 @@ function TabContent({
 // Main Settings Dialog
 // ============================================
 
-export function SettingsDialog({
-  isOpen,
-  onClose,
-  themeMode,
-  onThemeChange,
-  isWideMode,
-  onToggleWideMode,
-  initialTab = 'servers',
-  presetId,
-  onPresetChange,
-  availablePresets,
-  customCSS,
-  onCustomCSSChange,
-}: SettingsDialogProps) {
+export function SettingsDialog({ isOpen, onClose, initialTab = 'servers' }: SettingsDialogProps) {
   const isMobile = useIsMobile()
   const isTauriDesktop = isTauri() && !isMobile
   const normalizeTab = useCallback((next: SettingsDialogProps['initialTab']): SettingsTab => {
@@ -207,18 +148,6 @@ export function SettingsDialog({
     [tab, visibleTabs],
   )
 
-  const contentProps = {
-    themeMode,
-    onThemeChange,
-    isWideMode,
-    onToggleWideMode,
-    presetId,
-    onPresetChange,
-    availablePresets,
-    customCSS,
-    onCustomCSSChange,
-  }
-
   const activeTabMeta = visibleTabs.find(t => t.id === tab) || visibleTabs[0] || TABS[0]
 
   // 移动端：顶部 tab 切换 + 全屏内容
@@ -257,7 +186,7 @@ export function SettingsDialog({
 
           {/* Content */}
           <div className="flex-1 min-h-0 py-4 px-4 overflow-y-auto custom-scrollbar">
-            <TabContent tab={tab} {...contentProps} />
+            <TabContent tab={tab} />
           </div>
         </div>
       </Dialog>
@@ -327,7 +256,7 @@ export function SettingsDialog({
           </div>
 
           <div className="flex-1 min-h-0 py-5 px-6 overflow-y-auto custom-scrollbar">
-            <TabContent tab={tab} {...contentProps} />
+            <TabContent tab={tab} />
           </div>
         </div>
       </div>

@@ -16,7 +16,6 @@ import {
   ChevronDownIcon,
 } from '../../../components/Icons'
 import { useDirectory, useSessionStats, useKeybindingLabel } from '../../../hooks'
-import type { ThemeMode } from '../../../hooks'
 import { useSessionContext } from '../../../contexts/useSessionContext'
 import { useLayoutStore, useMessageStore } from '../../../store'
 import { useBusySessions, useBusyCount } from '../../../store/activeSessionStore'
@@ -50,10 +49,6 @@ interface SidePanelProps {
   onToggleSidebar: () => void
   contextLimit?: number
   onOpenSettings?: () => void
-  themeMode?: ThemeMode
-  onThemeChange?: (mode: ThemeMode, event?: React.MouseEvent) => void
-  isWideMode?: boolean
-  onToggleWideMode?: () => void
 }
 
 interface ProjectItem {
@@ -74,10 +69,6 @@ export function SidePanel({
   onToggleSidebar,
   contextLimit = 200000,
   onOpenSettings,
-  themeMode,
-  onThemeChange,
-  isWideMode,
-  onToggleWideMode,
 }: SidePanelProps) {
   const {
     currentDirectory,
@@ -683,10 +674,6 @@ export function SidePanel({
         stats={stats}
         hasMessages={hasMessages}
         onOpenSettings={onOpenSettings}
-        themeMode={themeMode}
-        onThemeChange={onThemeChange}
-        isWideMode={isWideMode}
-        onToggleWideMode={onToggleWideMode}
       />
 
       {/* Confirm Dialog */}

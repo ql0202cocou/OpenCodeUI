@@ -14,14 +14,13 @@ import { ToastContainer } from './components/ToastContainer'
 import { RightPanel } from './components/RightPanel'
 import { OutlineIndex } from './components/OutlineIndex'
 import { BottomPanel } from './components/BottomPanel'
-import { useTheme, useModels, useModelSelection, useChatSession, useGlobalKeybindings } from './hooks'
+import { useModels, useModelSelection, useChatSession, useGlobalKeybindings } from './hooks'
 import { useViewportHeight } from './hooks/useViewportHeight'
 import { useCancelHint } from './hooks/useCancelHint'
 import { useCloseServiceDialog } from './hooks/useCloseServiceDialog'
 import type { KeybindingHandlers } from './hooks/useKeybindings'
 import { keybindingStore } from './store/keybindingStore'
 import { layoutStore } from './store/layoutStore'
-import { STORAGE_KEY_WIDE_MODE } from './constants'
 import { restoreModelSelection } from './utils/sessionHelpers'
 import { findModelByKey } from './utils/modelUtils'
 import type { Attachment } from './api'
@@ -51,19 +50,6 @@ function App() {
   // ============================================
   const [fullAutoHint, setFullAutoHint] = useState<string | null>(null)
   const fullAutoHintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  // ============================================
-  // Theme
-  // ============================================
-  const {
-    mode: themeMode,
-    setThemeWithAnimation,
-    presetId,
-    setPresetWithAnimation,
-    availablePresets,
-    customCSS,
-    setCustomCSS,
-  } = useTheme()
 
   // ============================================
   // Models
@@ -131,21 +117,6 @@ function App() {
 
   // Viewport height tracking (移动端键盘适配)
   useViewportHeight()
-
-  // ============================================
-  // Wide Mode
-  // ============================================
-  const [isWideMode, setIsWideMode] = useState(() => {
-    return localStorage.getItem(STORAGE_KEY_WIDE_MODE) === 'true'
-  })
-
-  const toggleWideMode = useCallback(() => {
-    setIsWideMode(prev => {
-      const next = !prev
-      localStorage.setItem(STORAGE_KEY_WIDE_MODE, String(next))
-      return next
-    })
-  }, [])
 
   // ============================================
   // Settings Dialog
@@ -609,10 +580,6 @@ function App() {
         onClose={() => setSidebarExpanded(false)}
         contextLimit={currentModel?.contextLimit}
         onOpenSettings={openSettings}
-        themeMode={themeMode}
-        onThemeChange={setThemeWithAnimation}
-        isWideMode={isWideMode}
-        onToggleWideMode={toggleWideMode}
         projectDialogOpen={projectDialogOpen}
         onProjectDialogClose={closeProjectDialog}
       />
@@ -651,7 +618,6 @@ function App() {
                 onUndo={handleUndoWithAnimation}
                 canUndo={canUndo}
                 registerMessage={registerMessage}
-                isWideMode={isWideMode}
                 retryStatus={retryStatus}
                 bottomPadding={inputBoxHeight}
                 onVisibleMessageIdsChange={handleVisibleIdsChange}
@@ -784,20 +750,7 @@ function App() {
 
       <Suspense fallback={null}>
         {/* Settings Dialog */}
-        <SettingsDialog
-          isOpen={settingsDialogOpen}
-          onClose={closeSettings}
-          themeMode={themeMode}
-          onThemeChange={setThemeWithAnimation}
-          isWideMode={isWideMode}
-          onToggleWideMode={toggleWideMode}
-          initialTab={settingsInitialTab}
-          presetId={presetId}
-          onPresetChange={setPresetWithAnimation}
-          availablePresets={availablePresets}
-          customCSS={customCSS}
-          onCustomCSSChange={setCustomCSS}
-        />
+        <SettingsDialog isOpen={settingsDialogOpen} onClose={closeSettings} initialTab={settingsInitialTab} />
 
         {/* Command Palette */}
         <CommandPalette isOpen={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} commands={commands} />

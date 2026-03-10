@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Button } from '../../../components/ui/Button'
 import { SunIcon, MoonIcon, SystemIcon, MaximizeIcon, MinimizeIcon, CheckIcon } from '../../../components/Icons'
 import { Toggle, SegmentedControl, SettingRow, SettingsCard } from './SettingsUI'
-import type { ThemeMode } from '../../../hooks'
+import { useTheme } from '../../../hooks'
 
 // ============================================
 // Theme Preset Card
@@ -296,32 +296,22 @@ function CustomCSSEditor({ value, onChange }: { value: string; onChange: (css: s
 // Tab: Appearance
 // ============================================
 
-export interface AppearanceSettingsProps {
-  themeMode: ThemeMode
-  onThemeChange: (mode: ThemeMode, event?: React.MouseEvent) => void
-  isWideMode?: boolean
-  onToggleWideMode?: () => void
-  presetId?: string
-  onPresetChange?: (presetId: string, event?: React.MouseEvent) => void
-  availablePresets?: { id: string; name: string; description: string }[]
-  customCSS?: string
-  onCustomCSSChange?: (css: string) => void
-}
+export function AppearanceSettings() {
+  const {
+    mode: themeMode,
+    setThemeWithAnimation,
+    isWideMode,
+    toggleWideMode,
+    presetId,
+    setPresetWithAnimation,
+    availablePresets,
+    customCSS,
+    setCustomCSS,
+  } = useTheme()
 
-export function AppearanceSettings({
-  themeMode,
-  onThemeChange,
-  isWideMode,
-  onToggleWideMode,
-  presetId,
-  onPresetChange,
-  availablePresets,
-  customCSS,
-  onCustomCSSChange,
-}: AppearanceSettingsProps) {
   return (
     <div className="space-y-4">
-      {availablePresets && availablePresets.length > 0 && (
+      {availablePresets.length > 0 && (
         <SettingsCard title="Theme Presets" description="Choose a base visual style for the app">
           <div className="grid gap-2 sm:grid-cols-2">
             {availablePresets.map(p => (
@@ -331,21 +321,19 @@ export function AppearanceSettings({
                 name={p.name}
                 description={p.description}
                 isActive={presetId === p.id}
-                onClick={e => onPresetChange?.(p.id, e)}
+                onClick={e => setPresetWithAnimation(p.id, e)}
               />
             ))}
           </div>
         </SettingsCard>
       )}
 
-      {onCustomCSSChange && (
-        <SettingsCard
-          title="Custom CSS"
-          description="Override fonts, colors, and any CSS variables. Works with all themes."
-        >
-          <CustomCSSEditor value={customCSS || ''} onChange={onCustomCSSChange} />
-        </SettingsCard>
-      )}
+      <SettingsCard
+        title="Custom CSS"
+        description="Override fonts, colors, and any CSS variables. Works with all themes."
+      >
+        <CustomCSSEditor value={customCSS} onChange={setCustomCSS} />
+      </SettingsCard>
 
       <SettingsCard title="Display" description="Control color mode and layout">
         <div className="space-y-4">
@@ -358,22 +346,20 @@ export function AppearanceSettings({
                 { value: 'light', label: 'Light', icon: <SunIcon size={14} /> },
                 { value: 'dark', label: 'Dark', icon: <MoonIcon size={14} /> },
               ]}
-              onChange={(v, e) => onThemeChange(v, e)}
+              onChange={(v, e) => setThemeWithAnimation(v, e)}
             />
           </div>
 
-          {onToggleWideMode && (
-            <div className="pt-3 border-t border-border-100/55">
-              <SettingRow
-                label="Wide Mode"
-                description="Expand chat area for long outputs"
-                icon={isWideMode ? <MinimizeIcon size={14} /> : <MaximizeIcon size={14} />}
-                onClick={onToggleWideMode}
-              >
-                <Toggle enabled={!!isWideMode} onChange={onToggleWideMode} />
-              </SettingRow>
-            </div>
-          )}
+          <div className="pt-3 border-t border-border-100/55">
+            <SettingRow
+              label="Wide Mode"
+              description="Expand chat area for long outputs"
+              icon={isWideMode ? <MinimizeIcon size={14} /> : <MaximizeIcon size={14} />}
+              onClick={toggleWideMode}
+            >
+              <Toggle enabled={isWideMode} onChange={toggleWideMode} />
+            </SettingRow>
+          </div>
         </div>
       </SettingsCard>
     </div>

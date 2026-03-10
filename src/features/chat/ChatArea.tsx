@@ -6,6 +6,7 @@ import { useRef, useImperativeHandle, forwardRef, useState, memo, useCallback, u
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso'
 import { MessageRenderer } from '../message'
 import { messageStore } from '../../store'
+import { useTheme } from '../../hooks/useTheme'
 import { SpinnerIcon } from '../../components/Icons'
 import type { Message } from '../../types/message'
 import { RetryStatusInline, type RetryStatusInlineData } from './RetryStatusInline'
@@ -38,7 +39,6 @@ interface ChatAreaProps {
   onUndo?: (userMessageId: string) => void
   canUndo?: boolean
   registerMessage?: (id: string, element: HTMLElement | null) => void
-  isWideMode?: boolean
   retryStatus?: RetryStatusInlineData | null
   /** 底部留白高度（输入框实际高度），0 则用默认值 */
   bottomPadding?: number
@@ -80,7 +80,6 @@ export const ChatArea = memo(
         onUndo,
         canUndo,
         registerMessage,
-        isWideMode = false,
         retryStatus = null,
         bottomPadding = 0,
         onVisibleMessageIdsChange,
@@ -89,6 +88,7 @@ export const ChatArea = memo(
       ref,
     ) => {
       const virtuosoRef = useRef<VirtuosoHandle>(null)
+      const { isWideMode } = useTheme()
       const isMobile = useIsMobile()
       // 移动端输入框收起/展开会导致 ~80px 高度差，加大阈值防止 isAtBottom 抖动
       const atBottomThreshold = isMobile ? 150 : AT_BOTTOM_THRESHOLD_PX

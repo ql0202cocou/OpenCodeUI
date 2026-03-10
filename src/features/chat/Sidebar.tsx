@@ -3,7 +3,6 @@ import { SidePanel } from './sidebar/SidePanel'
 import { ProjectDialog } from './ProjectDialog'
 import { useDirectory } from '../../hooks'
 import { type ApiSession } from '../../api'
-import type { ThemeMode } from '../../hooks'
 
 const MIN_WIDTH = 240
 const MAX_WIDTH = 480
@@ -19,10 +18,6 @@ interface SidebarProps {
   onClose: () => void
   contextLimit?: number
   onOpenSettings?: () => void
-  themeMode?: ThemeMode
-  onThemeChange?: (mode: ThemeMode, event?: React.MouseEvent) => void
-  isWideMode?: boolean
-  onToggleWideMode?: () => void
   projectDialogOpen?: boolean
   onProjectDialogClose?: () => void
 }
@@ -36,10 +31,6 @@ export const Sidebar = memo(function Sidebar({
   onClose,
   contextLimit,
   onOpenSettings,
-  themeMode,
-  onThemeChange,
-  isWideMode,
-  onToggleWideMode,
   projectDialogOpen,
   onProjectDialogClose,
 }: SidebarProps) {
@@ -241,10 +232,6 @@ export const Sidebar = memo(function Sidebar({
             onToggleSidebar={onClose} // 移动端 toggle 就是关闭
             contextLimit={contextLimit}
             onOpenSettings={onOpenSettings}
-            themeMode={themeMode}
-            onThemeChange={onThemeChange}
-            isWideMode={isWideMode}
-            onToggleWideMode={onToggleWideMode}
           />
         </div>
 
@@ -284,10 +271,6 @@ export const Sidebar = memo(function Sidebar({
           onToggleSidebar={handleToggle}
           contextLimit={contextLimit}
           onOpenSettings={onOpenSettings}
-          themeMode={themeMode}
-          onThemeChange={onThemeChange}
-          isWideMode={isWideMode}
-          onToggleWideMode={onToggleWideMode}
         />
 
         {/* Resizer Handle (Desktop only, when expanded) */}

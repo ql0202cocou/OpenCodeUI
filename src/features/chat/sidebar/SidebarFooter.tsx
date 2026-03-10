@@ -12,8 +12,7 @@ import {
   ShareIcon,
 } from '../../../components/Icons'
 import { CircularProgress } from '../../../components/CircularProgress'
-import { formatTokens, formatCost } from '../../../hooks'
-import type { ThemeMode } from '../../../hooks'
+import { formatTokens, formatCost, useTheme } from '../../../hooks'
 import type { SessionStats } from '../../../hooks'
 
 // 状态指示器 - 圆环 + 右下角状态点
@@ -72,23 +71,10 @@ export interface SidebarFooterProps {
   stats: SessionStats
   hasMessages: boolean
   onOpenSettings?: () => void
-  themeMode?: ThemeMode
-  onThemeChange?: (mode: ThemeMode, event?: React.MouseEvent) => void
-  isWideMode?: boolean
-  onToggleWideMode?: () => void
 }
 
-export function SidebarFooter({
-  showLabels,
-  connectionState,
-  stats,
-  hasMessages,
-  onOpenSettings,
-  themeMode = 'system',
-  onThemeChange,
-  isWideMode,
-  onToggleWideMode,
-}: SidebarFooterProps) {
+export function SidebarFooter({ showLabels, connectionState, stats, hasMessages, onOpenSettings }: SidebarFooterProps) {
+  const { mode: themeMode, setThemeWithAnimation: onThemeChange, isWideMode, toggleWideMode } = useTheme()
   const [isOpen, setIsOpen] = useState(false)
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0, width: 260, fromBottom: false })
   const [shareDialogOpen, setShareDialogOpen] = useState(false)
@@ -281,7 +267,7 @@ export function SidebarFooter({
               {(['system', 'light', 'dark'] as const).map(m => (
                 <button
                   key={m}
-                  onClick={e => onThemeChange?.(m, e)}
+                  onClick={e => onThemeChange(m, e)}
                   className={`flex-1 flex items-center justify-center py-1.5 rounded-md text-xs font-medium transition-colors duration-200 ${
                     themeMode === m ? 'text-text-100' : 'text-text-400 hover:text-text-200'
                   }`}
@@ -296,10 +282,10 @@ export function SidebarFooter({
 
           {/* Menu Items */}
           <div className="py-1">
-            {onToggleWideMode && (
+            {toggleWideMode && (
               <button
                 onClick={() => {
-                  onToggleWideMode()
+                  toggleWideMode()
                   closeMenu()
                 }}
                 className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-text-300 hover:text-text-100 hover:bg-bg-200/50 transition-colors text-left"
