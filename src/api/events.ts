@@ -300,10 +300,10 @@ function connectViaBrowser() {
   // 捕获当前连接代次
   const myGeneration = connectionGeneration
 
-  // 如果配置了密码，添加 Authorization header
   fetch(`${getApiBaseUrl()}/global/event`, {
     signal: singletonController.signal,
     headers: {
+      Accept: 'text/event-stream',
       ...getAuthHeader(),
     },
   })
@@ -362,24 +362,33 @@ function connectViaBrowser() {
         const lines = buffer.split('\n')
         buffer = lines.pop() || ''
 
-        let eventData = ''
+        // SSE spec: 多行 data 用 \n 拼接，空行触发 dispatch
+        const dataLines: string[] = []
 
-        for (const line of lines) {
+        for (const rawLine of lines) {
+          // 兼容 CRLF：剥掉尾部 \r
+          const line = rawLine.endsWith('\r') ? rawLine.slice(0, -1) : rawLine
+
           if (line.startsWith('data:')) {
-            eventData = line.slice(5).trim()
-          } else if (line === '' && eventData) {
-            try {
-              const globalEvent = JSON.parse(eventData) as GlobalEvent
-              // 广播给所有订阅者
-              broadcastEvent(globalEvent)
-            } catch (e) {
-              // SSE parse error - logged only in development
-              if (import.meta.env.DEV) {
-                console.warn('[SSE] Failed to parse event:', e, eventData)
+            // SSE spec: "data:" 后面可以有可选空格
+            const payload = line[5] === ' ' ? line.slice(6) : line.slice(5)
+            dataLines.push(payload)
+          } else if (line === '') {
+            // 空行 = 事件结束，dispatch 已积累的 data
+            if (dataLines.length > 0) {
+              const eventData = dataLines.join('\n')
+              dataLines.length = 0
+              try {
+                const globalEvent = JSON.parse(eventData) as GlobalEvent
+                broadcastEvent(globalEvent)
+              } catch (e) {
+                if (import.meta.env.DEV) {
+                  console.warn('[SSE] Failed to parse event:', e, eventData)
+                }
               }
             }
-            eventData = ''
           }
+          // SSE spec: 忽略 "event:", "id:", "retry:" 等其他字段（当前不需要）
         }
       }
     })
