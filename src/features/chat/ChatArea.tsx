@@ -369,6 +369,9 @@ export const ChatArea = memo(
             {/* Top sentinel for loadMore */}
             <div ref={topSentinelRef} className="h-px" aria-hidden="true" />
 
+            {/* Top spacing */}
+            <div className="h-20" />
+
             {/* Loading more / No more history indicator */}
             {visibleMessages.length > 0 &&
               (isLoadingMore ? (
@@ -383,9 +386,6 @@ export const ChatArea = memo(
                   <span className="text-text-500 text-xs">Beginning of conversation</span>
                 </div>
               ) : null)}
-
-            {/* Top spacing */}
-            <div className="h-20" />
 
             {/* Messages */}
             {visibleMessages.map(msg => (
