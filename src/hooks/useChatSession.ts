@@ -276,18 +276,9 @@ export function useChatSession({ chatAreaRef, currentModel, refetchModels }: Use
     activeDirectories,
   )
 
-  const handleVisibleMessageIdsChange = useCallback(
-    (ids: string[]) => {
-      if (!routeSessionId || ids.length === 0) return
-      messageStore.prefetchMessageParts(routeSessionId, ids)
-
-      const sessionState = messageStore.getSessionState(routeSessionId)
-      if (!sessionState?.isStreaming) {
-        messageStore.evictMessageParts(routeSessionId, ids)
-      }
-    },
-    [routeSessionId],
-  )
+  const handleVisibleMessageIdsChange = useCallback((_ids: string[]) => {
+    // No-op: parts are always in memory now
+  }, [])
 
   // Load agents
   useEffect(() => {

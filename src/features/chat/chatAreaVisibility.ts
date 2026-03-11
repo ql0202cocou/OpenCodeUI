@@ -86,7 +86,16 @@ export interface VisibleMessageEntry {
 }
 
 export function buildVisibleMessageEntries(messages: Message[]): VisibleMessageEntry[] {
-  const filteredMessages = messages.filter(messageHasContent)
+  // 防御性去重：保证输入无重复 ID
+  const seenIds = new Set<string>()
+  const unique: Message[] = []
+  for (const m of messages) {
+    if (!seenIds.has(m.info.id)) {
+      seenIds.add(m.info.id)
+      unique.push(m)
+    }
+  }
+  const filteredMessages = unique.filter(messageHasContent)
   const result: VisibleMessageEntry[] = []
 
   for (let i = 0; i < filteredMessages.length; i++) {

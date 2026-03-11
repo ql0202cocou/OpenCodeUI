@@ -3,7 +3,6 @@
 // ============================================
 
 import type { Message, Part } from '../types/message'
-import type { ApiPart } from '../api/types'
 
 export interface RevertState {
   /** 撤销点的消息 ID */
@@ -46,23 +45,6 @@ export interface SendRollbackSnapshot {
   messages: Message[]
   revertState: RevertState | null
 }
-
-export type PendingPartEvent =
-  | {
-      kind: 'updated'
-      order: number
-      data: ApiPart & { sessionID: string; messageID: string }
-    }
-  | {
-      kind: 'delta'
-      order: number
-      data: { sessionID: string; messageID: string; partID: string; field: string; delta: string }
-    }
-  | {
-      kind: 'removed'
-      order: number
-      data: { id: string; messageID: string; sessionID: string }
-    }
 
 export interface MessageStoreSnapshot {
   sessionId: string | null

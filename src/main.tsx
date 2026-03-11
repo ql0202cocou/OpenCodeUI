@@ -8,7 +8,6 @@ import { serverStore } from './store/serverStore'
 import { messageStore } from './store/messageStore'
 import { childSessionStore } from './store/childSessionStore'
 import { todoStore } from './store/todoStore'
-import { messageCacheStore } from './store/messageCacheStore'
 import { autoApproveStore } from './store/autoApproveStore'
 import { serviceStore } from './store/serviceStore'
 import { reconnectSSE } from './api/events'
@@ -53,10 +52,7 @@ serverStore.onServerChange(() => {
   childSessionStore.clearAll()
   todoStore.clearAll()
 
-  // 2. 清空 IndexedDB 消息缓存
-  void messageCacheStore.clearAll()
-
-  // 3. 重置路径模式缓存（不同服务器可能是不同操作系统）
+  // 2. 重置路径模式缓存（不同服务器可能是不同操作系统）
   resetPathModeCache()
 
   // 4. 重新加载 auto-approve 开关状态（从新服务器的 storage key 读取）

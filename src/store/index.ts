@@ -35,8 +35,6 @@ export {
 } from './keybindingStore'
 export type { KeybindingAction, KeybindingConfig, ParsedKeybinding } from './keybindingStore'
 
-export { messageCacheStore } from './messageCacheStore'
-
 export { themeStore } from './themeStore'
 export type { ColorMode, ThemeState } from './themeStore'
 
