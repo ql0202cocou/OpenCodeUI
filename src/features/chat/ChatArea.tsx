@@ -430,20 +430,15 @@ export const ChatArea = memo(
             {/* Top spacing */}
             <div className="h-20" />
 
-            {/* Loading more / No more history indicator */}
-            {visibleMessages.length > 0 &&
-              (isLoadingMore ? (
-                <div className="flex justify-center py-3">
-                  <div className="flex items-center gap-2 text-text-400 text-xs">
-                    <span className="w-3.5 h-3.5 border-2 border-text-400/30 border-t-text-400 rounded-full animate-spin" />
-                    Loading history...
-                  </div>
+            {/* Loading more indicator */}
+            {visibleMessages.length > 0 && isLoadingMore && (
+              <div className="flex justify-center py-3">
+                <div className="flex items-center gap-2 text-text-400 text-xs">
+                  <span className="w-3.5 h-3.5 border-2 border-text-400/30 border-t-text-400 rounded-full animate-spin" />
+                  Loading history...
                 </div>
-              ) : !hasMoreHistory ? (
-                <div className="flex justify-center py-3">
-                  <span className="text-text-500 text-xs">Beginning of conversation</span>
-                </div>
-              ) : null)}
+              </div>
+            )}
 
             {/* Messages */}
             {visibleMessages.map(msg => (
