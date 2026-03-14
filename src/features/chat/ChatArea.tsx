@@ -380,29 +380,47 @@ export const ChatArea = memo(
       // Render
       // ============================================
 
-      const renderMessage = useCallback(
-        (msg: Message) => {
-          const handleRef = (el: HTMLDivElement | null) => {
-            registerMessage?.(msg.info.id, el)
+      // 将连续助手消息分组，共享容器渲染（浑然一体）
+      const messageGroups = useMemo(() => {
+        const groups: Message[][] = []
+        for (const msg of visibleMessages) {
+          const prev = groups[groups.length - 1]
+          if (prev && msg.info.role === 'assistant' && prev[0].info.role === 'assistant') {
+            prev.push(msg)
+          } else {
+            groups.push([msg])
           }
+        }
+        return groups
+      }, [visibleMessages])
 
+      const renderMessageGroup = useCallback(
+        (messages: Message[]) => {
+          const isUser = messages[0].info.role === 'user'
           return (
             <div
-              ref={handleRef}
               className={`w-full ${messageMaxWidthClass} mx-auto px-4 py-3 transition-[max-width] duration-300 ease-in-out`}
             >
-              <div className={`flex ${msg.info.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`min-w-0 group ${msg.info.role === 'assistant' ? 'w-full' : ''}`}>
-                  <MessageRenderer
-                    message={msg}
-                    turnDuration={turnDurationMap.get(msg.info.id)}
-                    onUndo={onUndo}
-                    canUndo={canUndo}
-                    onEnsureParts={id => {
-                      if (!sessionId) return
-                      void messageStore.hydrateMessageParts(sessionId, id)
-                    }}
-                  />
+              <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+                <div className={`min-w-0 group ${!isUser ? 'w-full' : ''} flex flex-col gap-2`}>
+                  {messages.map(msg => (
+                    <div
+                      key={msg.info.id}
+                      ref={(el: HTMLDivElement | null) => registerMessage?.(msg.info.id, el)}
+                      data-message-id={msg.info.id}
+                    >
+                      <MessageRenderer
+                        message={msg}
+                        turnDuration={turnDurationMap.get(msg.info.id)}
+                        onUndo={onUndo}
+                        canUndo={canUndo}
+                        onEnsureParts={id => {
+                          if (!sessionId) return
+                          void messageStore.hydrateMessageParts(sessionId, id)
+                        }}
+                      />
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -441,15 +459,15 @@ export const ChatArea = memo(
             )}
 
             {/* Messages */}
-            {visibleMessages.map(msg => (
-              <div
-                key={msg.info.id}
-                data-message-id={msg.info.id}
-                className={msg.isStreaming ? undefined : 'chat-message-item'}
-              >
-                {renderMessage(msg)}
-              </div>
-            ))}
+            {messageGroups.map(group => {
+              const first = group[0]
+              const isStreaming = group.some(m => m.isStreaming)
+              return (
+                <div key={first.info.id} className={isStreaming ? undefined : 'chat-message-item'}>
+                  {renderMessageGroup(group)}
+                </div>
+              )
+            })}
 
             {/* Retry status */}
             {retryStatus && (
