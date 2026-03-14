@@ -1,5 +1,21 @@
 # Changelog
 
+## [v0.2.0] - 2026-03-14
+
+- feat: RECENTS 列表标记活跃 session 状态 (closes #25) (98ecce9)
+- fix: motion animate() 类型歧义 — 改用 motion/mini 单签名 API 解决 tsc -b TS2769 (7927bcf)
+- fix: 移除 ContentBlock loading skeleton 骨架条，避免输出短于占位时的负增长跳变 (f6db986)
+- feat: 消息入场生长动画 — 用户和助手消息统一从 height 0 平滑展开 (ce055fb)
+- fix: SmoothHeight 激活时锁定 outer 高度，修复动画不触发的问题 (e5f6cf5)
+- feat: 命令式 animate() 动画方案 — 高性能 + 零 React 组件开销 (4481aba)
+- fix: 修复流结束后闪烁回弹问题 (192944e)
+- fix: 修复流式文本不实时渲染的问题，移除 useSmoothStream (005b6bf)
+- refactor: 连续助手消息分组渲染，共享容器浑然一体 (cfadad0)
+- Revert "fix: 复制按钮始终占位，避免 text 到达时布局跳变" (1af197a)
+- fix: 移除未使用的 hasMoreHistory 解构变量，修复 TS6133 编译错误 (cf9419b)
+- fix: 复制按钮始终占位，避免 text 到达时布局跳变 (d51e7a8)
+- fix: 移除 'Beginning of conversation' 常驻提示，仅保留加载中 spinner (11484c6)
+
 ## [v0.1.18] - 2026-03-13
 
 - ci: 加速 release 编译 — Rust 多线程 codegen + Android 双架构并行 (2398c54)
