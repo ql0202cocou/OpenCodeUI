@@ -1,5 +1,5 @@
 import { memo, useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react'
-import { animate } from 'motion'
+import { animate } from 'motion/mini'
 import { ChevronDownIcon, ChevronRightIcon, UndoIcon } from '../../components/Icons'
 import { CopyButton, SmoothHeight } from '../../components/ui'
 import { useDelayedRender } from '../../hooks'
@@ -70,7 +70,7 @@ function useEntryGrowAnimation(created: number) {
     const targetHeight = el.scrollHeight
     el.style.height = '0px'
     el.style.overflow = 'hidden'
-    animate(el, { height: `${targetHeight}px` }, { duration: 0.2, ease: 'ease-out' }).then(() => {
+    animate(el, { height: `${targetHeight}px` }, { duration: 0.2, ease: 'easeOut' }).then(() => {
       el.style.height = ''
       el.style.overflow = ''
     })

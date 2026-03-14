@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { animate } from 'motion'
+import { animate } from 'motion/mini'
 
 /**
  * SmoothHeight - 内容高度变化时平滑过渡
@@ -46,7 +46,14 @@ export function SmoothHeight({
       if (Math.abs(target - current) < 1) return
 
       animRef.current?.stop()
-      animRef.current = animate(outer, { height: `${target}px` }, { duration: 0.12, ease: 'ease-out' })
+      animRef.current = animate(
+        outer,
+        { height: `${target}px` },
+        {
+          duration: 0.12,
+          ease: 'easeOut',
+        },
+      )
     }
 
     const ro = new ResizeObserver(update)

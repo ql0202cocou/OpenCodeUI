@@ -18,7 +18,7 @@ import {
   useMemo,
   useState,
 } from 'react'
-import { animate } from 'motion'
+import { animate } from 'motion/mini'
 import { MessageRenderer } from '../message'
 import { messageStore } from '../../store'
 import { useTheme } from '../../hooks/useTheme'
@@ -243,7 +243,14 @@ export const ChatArea = memo(
 
           // 消息列表整体淡入 — 一次命令式 animate，零 React 开销
           if (messagesRef.current) {
-            animate(messagesRef.current, { opacity: [0, 1] }, { duration: 0.2, ease: 'ease-out' })
+            animate(
+              messagesRef.current,
+              { opacity: [0, 1] },
+              {
+                duration: 0.2,
+                ease: 'easeOut',
+              },
+            )
           }
         })
       }, [sessionId, onAtBottomChange])
