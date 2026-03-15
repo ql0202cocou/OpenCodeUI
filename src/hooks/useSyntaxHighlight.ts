@@ -428,7 +428,7 @@ export function useSyntaxHighlightRef(
 
     if (cachedResult !== undefined) {
       tokensRef.current = cachedResult
-      setVersion(v => v + 1)
+      setVersion(v => v + 1) // eslint-disable-line react-hooks/set-state-in-effect -- 缓存命中时需同步通知消费者
       return
     }
 

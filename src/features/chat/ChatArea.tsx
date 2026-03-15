@@ -68,7 +68,9 @@ export const ChatArea = memo(
       const topSentinelRef = useRef<HTMLDivElement>(null)
       const isAtBottomRef = useRef(true)
       const loadMoreRef = useRef(onLoadMore)
-      loadMoreRef.current = onLoadMore
+      useEffect(() => {
+        loadMoreRef.current = onLoadMore
+      }, [onLoadMore])
       const isLoadingRef = useRef(false)
       const [isLoadingMore, setIsLoadingMore] = useState(false)
 
@@ -216,7 +218,9 @@ export const ChatArea = memo(
       // ============================================
 
       const onVisibleIdsChangeRef = useRef(onVisibleMessageIdsChange)
-      onVisibleIdsChangeRef.current = onVisibleMessageIdsChange
+      useEffect(() => {
+        onVisibleIdsChangeRef.current = onVisibleMessageIdsChange
+      }, [onVisibleMessageIdsChange])
 
       useEffect(() => {
         const root = scrollRef.current

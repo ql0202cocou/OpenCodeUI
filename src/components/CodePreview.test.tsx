@@ -14,7 +14,8 @@ describe('CodePreview', () => {
     render(<CodePreview code={'first line\nsecond line'} language="text" />)
 
     expect(screen.getByText('first line')).toBeInTheDocument()
-    expect(screen.getByText('second line')).toBeInTheDocument()
+    // "second line" 同时出现在可见行和隐藏的宽度探测元素中
+    expect(screen.getAllByText('second line').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('1')).toBeInTheDocument()
     expect(screen.getByText('2')).toBeInTheDocument()
   })

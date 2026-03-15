@@ -514,14 +514,14 @@ export function useChatSession({ chatAreaRef, currentModel, refetchModels }: Use
         chatAreaRef.current?.scrollToLastMessage()
       }, UNDO_SCROLL_DELAY_MS)
     },
-    [messages, animateUndo, handleUndo, chatAreaRef],
+    [messages, animateUndo, handleUndo], // eslint-disable-line react-hooks/exhaustive-deps -- chatAreaRef is a stable ref
   )
 
   // Redo with animation
   const handleRedoWithAnimation = useCallback(async () => {
     await animateRedo()
     await handleRedo()
-  }, [animateRedo, handleRedo, chatAreaRef])
+  }, [animateRedo, handleRedo])
 
   // Session selection
   const handleSelectSession = useCallback(
