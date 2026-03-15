@@ -39,7 +39,6 @@ export type ChatAreaHandle = {
   scrollToBottom: (instant?: boolean) => void
   scrollToBottomIfAtBottom: () => void
   scrollToLastMessage: () => void
-  suppressAutoScroll: (duration?: number) => void
   scrollToMessageIndex: (index: number) => void
   scrollToMessageId: (messageId: string) => void
 }
@@ -277,9 +276,6 @@ export const ChatArea = memo(
             scrollRef.current
               ?.querySelector(`[data-message-id="${lastId}"]`)
               ?.scrollIntoView({ block: 'start', behavior: 'auto' })
-          },
-          suppressAutoScroll: (_duration = 500) => {
-            // column-reverse 下不需要 suppress，保留接口兼容
           },
           scrollToMessageIndex: (index: number) => {
             const msg = visibleMessages[index]
