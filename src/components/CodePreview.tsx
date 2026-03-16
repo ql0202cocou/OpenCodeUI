@@ -40,19 +40,6 @@ export function CodePreview({ code, language, truncateLines = true, maxHeight, i
   // gutter 总宽度 = pl-4(16px) + 数字(gutterCh ch) + pr-3(12px)
   const gutterWidth = `calc(${gutterCh}ch + 1.75rem)`
 
-  // 最长行文本 — 用于 probe 元素精确撑开 scrollWidth（虚拟滚动下 DOM 测量不准）
-  const longestLine = useMemo(() => {
-    let max = '',
-      maxLen = 0
-    for (const line of lines) {
-      if (line.length > maxLen) {
-        maxLen = line.length
-        max = line
-      }
-    }
-    return truncateLines && maxLen > MAX_LINE_LENGTH ? max.slice(0, MAX_LINE_LENGTH) : max
-  }, [lines, truncateLines])
-
   // tokens 存在 ref 里，不经过 React state/props
   const enableHighlight = language !== 'text'
   const { tokensRef, version } = useSyntaxHighlightRef(code, {
@@ -64,6 +51,7 @@ export function CodePreview({ code, language, truncateLines = true, maxHeight, i
   const contentRef = useRef<HTMLDivElement>(null)
   const scrollbarRef = useRef<HTMLDivElement>(null)
   const scrollSourceRef = useRef<'content' | 'scrollbar' | null>(null)
+  const maxScrollWidthRef = useRef(0)
   const [scrollTop, setScrollTop] = useState(0)
   const [containerHeight, setContainerHeight] = useState(0)
   const [contentWidth, setContentWidth] = useState(0)
@@ -105,19 +93,32 @@ export function CodePreview({ code, language, truncateLines = true, maxHeight, i
     }
   }, [isResizing])
 
-  // 测量 content 宽度（scrollWidth vs clientWidth，判断是否需要横向滚动条）
+  // 测量 content 宽度 — 追踪可见行 scrollWidth 历史最大值（CodeMirror 同款方案）
+  // 最宽行被滚动到之前 scrollbar 可能不完全准确，但不会出现不可见内容撑宽的问题
   useEffect(() => {
     const content = contentRef.current
     if (!content) return
+    const inner = content.firstElementChild as HTMLElement
 
     const measure = () => {
-      const inner = content.firstElementChild as HTMLElement
-      if (inner) setContentWidth(inner.scrollWidth)
+      if (inner) {
+        const sw = inner.scrollWidth
+        if (sw > maxScrollWidthRef.current) {
+          maxScrollWidthRef.current = sw
+          inner.style.minWidth = `${sw}px`
+        }
+        setContentWidth(maxScrollWidthRef.current)
+      }
       setContentClientWidth(content.clientWidth)
     }
 
     measure()
-    const ro = new ResizeObserver(measure)
+    const ro = new ResizeObserver(() => {
+      // 容器宽度变化时重置
+      maxScrollWidthRef.current = 0
+      if (inner) inner.style.minWidth = ''
+      measure()
+    })
     ro.observe(content)
     const mo = new MutationObserver(measure)
     mo.observe(content, { childList: true, subtree: true })
@@ -232,13 +233,7 @@ export function CodePreview({ code, language, truncateLines = true, maxHeight, i
             className="flex-1 min-w-0 overflow-x-auto scrollbar-none"
             onScroll={handleContentScroll}
           >
-            <div className="inline-block min-w-full">
-              {contentRows}
-              {/* Probe: 最长行文本撑开 scrollWidth，visibility:hidden 不可见但参与布局 */}
-              <div className="pl-3 pr-4 whitespace-pre" style={{ visibility: 'hidden', height: 0, overflow: 'hidden' }}>
-                {longestLine}
-              </div>
-            </div>
+            <div className="inline-block min-w-full">{contentRows}</div>
           </div>
         </div>
       </div>
