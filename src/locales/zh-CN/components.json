@@ -5,7 +5,7 @@
   },
   "fileExplorer": {
     "selectProject": "选择项目以浏览文件",
-    "explorer": "资源管理器",
+    "explorer": "文件浏览器",
     "noFilesFound": "未找到文件",
     "binaryFile": "二进制文件 - 无法预览",
     "fit": "适应",
@@ -34,8 +34,8 @@
     "files": "文件",
     "changes": "变更",
     "mcp": "MCP",
-    "skills": "技能",
-    "worktrees": "工作树",
+    "skills": "Skills",
+    "worktrees": "Worktree",
     "tab": "标签",
     "addTab": "添加标签",
     "moveToRight": "移动到右侧面板",
@@ -48,7 +48,7 @@
     "noChanges": "此会话无变更",
     "list": "列表",
     "tree": "树形",
-    "unified": "统一",
+    "unified": "合并",
     "split": "分栏"
   },
   "mcpPanel": {
@@ -76,27 +76,27 @@
     "authenticate": "认证"
   },
   "skillPanel": {
-    "title": "技能",
-    "filterPlaceholder": "筛选技能...",
-    "loadingSkills": "加载技能中...",
-    "failedToLoad": "加载技能失败",
-    "noSkills": "未找到技能"
+    "title": "Skills",
+    "filterPlaceholder": "筛选 Skill...",
+    "loadingSkills": "加载 Skills...",
+    "failedToLoad": "加载 Skills 失败",
+    "noSkills": "没有可用的 Skill"
   },
   "worktreePanel": {
-    "selectProject": "选择项目以管理工作树",
+    "selectProject": "选择项目以管理 Worktree",
     "git": "Git",
-    "worktrees": "工作树",
-    "createWorktree": "创建工作树",
-    "loadingWorktrees": "加载工作树中...",
-    "noWorktrees": "未找到工作树",
-    "removeWorktree": "移除工作树",
-    "resetWorktree": "重置工作树",
-    "newWorktree": "新建工作树",
-    "worktreeNamePlaceholder": "工作树名称（例如 feature-xyz）",
+    "worktrees": "Worktree",
+    "createWorktree": "新建 Worktree",
+    "loadingWorktrees": "加载 Worktree...",
+    "noWorktrees": "没有 Worktree",
+    "removeWorktree": "移除 Worktree",
+    "resetWorktree": "重置 Worktree",
+    "newWorktree": "新建 Worktree",
+    "worktreeNamePlaceholder": "Worktree 名称（例如 feature-xyz）",
     "openSessionAfter": "创建后打开会话",
-    "openSession": "在此工作树中打开会话",
-    "resetWorktreeAction": "重置工作树",
-    "removeWorktreeAction": "移除工作树"
+    "openSession": "在此 Worktree 中打开会话",
+    "resetWorktreeAction": "重置 Worktree",
+    "removeWorktreeAction": "移除 Worktree"
   },
   "toast": {
     "clearAll": "清除全部"
@@ -117,7 +117,7 @@
   },
   "contentBlock": {
     "fullscreen": "全屏",
-    "exitCode": "退出码 {{code}}"
+    "exitCode": "exit {{code}}"
   },
   "diffView": {
     "fullscreenView": "全屏查看"

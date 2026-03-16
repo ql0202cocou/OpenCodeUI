@@ -20,8 +20,8 @@
     "nameResult": "{{name}} 结果"
   },
   "reasoning": {
-    "thinking": "思考中...",
-    "thinkingLabel": "思考",
+    "thinking": "Thinking...",
+    "thinkingLabel": "Thinking",
     "thoughtFor": "思考了 {{duration}}",
     "thoughtProcess": "思考过程"
   },
@@ -47,8 +47,8 @@
     "statusCode": "状态码：{{code}}",
     "contextCompacted": "上下文{{auto}}已压缩",
     "autoPrefix": "自动",
-    "filesChanged": "{{count}} 个文件已更改",
-    "filesChanged_other": "{{count}} 个文件已更改"
+    "filesChanged": "{{count}} 个文件变更",
+    "filesChanged_other": "{{count}} 个文件变更"
   },
   "subtask": {
     "running": "运行中",
@@ -61,7 +61,7 @@
   "stepFinish": {
     "inputTokens": "输入：{{input}}",
     "outputTokens": "输出：{{output}}",
-    "reasoningTokens": "推理：{{reasoning}}",
+    "reasoningTokens": "Reasoning：{{reasoning}}",
     "cacheRead": "缓存读取：{{read}}",
     "cacheWrite": "缓存写入：{{write}}",
     "cached": "{{count}} 已缓存",
