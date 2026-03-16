@@ -44,7 +44,10 @@
     "password": "密码",
     "passwordPlaceholder": "OPENCODE_SERVER_PASSWORD",
     "crossOriginWarning": "跨域 + 密码可能因 CORS 限制在某些浏览器中无法工作。",
-    "credentialsStorage": "凭证存储在 localStorage 中，通过 HTTP Basic Auth 发送。"
+    "credentialsStorage": "凭证存储在 localStorage 中，通过 HTTP Basic Auth 发送。",
+    "editServer": "编辑服务器",
+    "deleteServer": "删除服务器",
+    "deleteServerConfirm": "确定从列表中移除「{{name}}」？此操作无法撤销。"
   },
   "chat": {
     "pathsFormatting": "路径和格式",

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Dialog } from '../../components/ui/Dialog'
 import { SunIcon, GlobeIcon, SettingsIcon, KeyboardIcon, CloseIcon, BellIcon, PlugIcon } from '../../components/Icons'
@@ -92,6 +92,7 @@ export function SettingsDialog({ isOpen, onClose, initialTab = 'servers' }: Sett
   const { t } = useTranslation(['settings'])
   const isMobile = useIsMobile()
   const isTauriDesktop = isTauri() && !isMobile
+  const scrollRef = useRef<HTMLDivElement>(null)
   const normalizeTab = useCallback((next: SettingsDialogProps['initialTab']): SettingsTab => {
     if (!next || next === 'general') return 'chat'
     return next
@@ -145,6 +146,14 @@ export function SettingsDialog({ isOpen, onClose, initialTab = 'servers' }: Sett
     return () => cancelAnimationFrame(frameId)
   }, [tab, visibleTabs])
 
+  // 切换 tab 时重置滚动位置
+  const switchTab = useCallback((nextTab: SettingsTab) => {
+    setTab(nextTab)
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ top: 0 })
+    })
+  }, [])
+
   const handleTabKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
@@ -153,50 +162,55 @@ export function SettingsDialog({ isOpen, onClose, initialTab = 'servers' }: Sett
         const ids = visibleTabs.map(t => t.id)
         if (ids.length === 0) return
         const next = (ids.indexOf(tab) + dir + ids.length) % ids.length
-        setTab(ids[next])
+        switchTab(ids[next])
       }
     },
-    [tab, visibleTabs],
+    [tab, visibleTabs, switchTab],
   )
 
   const activeTabMeta = visibleTabs.find(vt => vt.id === tab) || visibleTabs[0]
 
-  // 移动端：顶部 tab 切换 + 全屏内容
+  // 移动端：全屏体验，顶部 sticky tab
   if (isMobile) {
     return (
-      <Dialog isOpen={isOpen} onClose={onClose} title="" width="100%" showCloseButton={false}>
-        <div className="flex flex-col -m-5" style={{ height: '88vh' }}>
-          {/* Top: Title + Close */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border-100/50 shrink-0">
-            <div>
-              <div className="text-sm font-semibold text-text-100">{t('title')}</div>
-              <div className="text-[11px] text-text-400 mt-0.5">{t('version', { version: __APP_VERSION__ })}</div>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-2 text-text-400 hover:text-text-200 hover:bg-bg-100 rounded-md transition-colors -mr-1"
-            >
-              <CloseIcon size={18} />
-            </button>
-          </div>
-
-          {/* Tab Bar - 横向滚动 */}
-          <div className="flex items-center gap-1 px-3 py-2 border-b border-border-100/50 shrink-0 overflow-x-auto scrollbar-none">
-            {visibleTabs.map(t => (
+      <Dialog isOpen={isOpen} onClose={onClose} title="" width="100%" showCloseButton={false} rawContent>
+        <div className="flex flex-col" style={{ height: '92vh' }}>
+          {/* Sticky Header + Tabs */}
+          <div className="shrink-0 bg-bg-000">
+            {/* Title bar */}
+            <div className="flex items-center justify-between px-4 pt-2 pb-2">
+              <div className="text-[15px] font-semibold text-text-100">{t('title')}</div>
               <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap shrink-0
-                  ${t.id === tab ? 'bg-bg-100 text-text-100' : 'text-text-400 active:bg-bg-100/50'}`}
+                onClick={onClose}
+                className="p-2 -mr-1 text-text-400 hover:text-text-200 active:bg-bg-100 rounded-lg transition-colors"
               >
-                {t.icon}
-                {t.label}
+                <CloseIcon size={18} />
               </button>
-            ))}
+            </div>
+
+            {/* Tab Bar - pill style, horizontal scroll */}
+            <div className="flex items-center gap-1.5 px-3 pb-2.5 overflow-x-auto scrollbar-none">
+              {visibleTabs.map(vt => (
+                <button
+                  key={vt.id}
+                  onClick={() => switchTab(vt.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-medium transition-colors whitespace-nowrap shrink-0
+                    ${
+                      vt.id === tab
+                        ? 'bg-accent-main-100/10 text-accent-main-100 ring-1 ring-accent-main-100/25'
+                        : 'text-text-400 active:bg-bg-100/60'
+                    }`}
+                >
+                  {vt.icon}
+                  {vt.label}
+                </button>
+              ))}
+            </div>
+            <div className="border-b border-border-100/40" />
           </div>
 
-          {/* Content */}
-          <div className="flex-1 min-h-0 py-4 px-4 overflow-y-auto custom-scrollbar">
+          {/* Content - single scroll container */}
+          <div ref={scrollRef} className="flex-1 min-h-0 py-4 px-4 overflow-y-auto custom-scrollbar overscroll-contain">
             <TabContent tab={tab} />
           </div>
         </div>
@@ -206,38 +220,38 @@ export function SettingsDialog({ isOpen, onClose, initialTab = 'servers' }: Sett
 
   // 桌面端：左侧导航 + 右侧内容
   return (
-    <Dialog isOpen={isOpen} onClose={onClose} title="" width="min(97vw, 1040px)" showCloseButton={false}>
-      <div className="flex h-[min(86vh,760px)] -m-5">
-        {/* Left Nav */}
+    <Dialog isOpen={isOpen} onClose={onClose} title="" width="min(97vw, 1040px)" showCloseButton={false} rawContent>
+      <div className="flex h-[min(90vh,820px)]">
+        {/* Left Nav - 窄屏时收缩 */}
         <nav
-          className="w-[236px] shrink-0 border-r border-border-100/60 bg-bg-050/45 py-4 px-2.5 flex flex-col"
+          className="w-[200px] xl:w-[236px] shrink-0 border-r border-border-100/60 bg-bg-050/45 py-4 px-2 xl:px-2.5 flex flex-col overflow-y-auto scrollbar-none"
           onKeyDown={handleTabKeyDown}
         >
-          <div className="px-3 mb-4">
+          <div className="px-2.5 xl:px-3 mb-4">
             <div className="text-sm font-semibold text-text-100">{t('title')}</div>
-            <div className="text-[11px] text-text-400 mt-0.5 leading-relaxed">{t('subtitle')}</div>
+            <div className="text-[11px] text-text-400 mt-0.5 leading-relaxed hidden xl:block">{t('subtitle')}</div>
           </div>
           <div className="space-y-3">
             {groupedTabs.map(group => (
               <div key={group.label}>
-                <div className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-text-400/90">
+                <div className="px-2.5 xl:px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-text-400/90">
                   {group.label}
                 </div>
-                <div className="space-y-1">
-                  {group.tabs.map(t => (
+                <div className="space-y-0.5">
+                  {group.tabs.map(vt => (
                     <button
-                      key={t.id}
-                      onClick={() => setTab(t.id)}
-                      tabIndex={t.id === tab ? 0 : -1}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors
+                      key={vt.id}
+                      onClick={() => switchTab(vt.id)}
+                      tabIndex={vt.id === tab ? 0 : -1}
+                      className={`w-full flex items-center gap-2.5 px-2.5 xl:px-3 py-2 xl:py-2.5 rounded-lg text-[13px] font-medium transition-colors
                         ${
-                          t.id === tab
+                          vt.id === tab
                             ? 'bg-bg-100 text-text-100 ring-1 ring-border-200/60'
                             : 'text-text-400 hover:text-text-200 hover:bg-bg-100/50'
                         }`}
                     >
-                      {t.icon}
-                      {t.label}
+                      {vt.icon}
+                      <span className="truncate">{vt.label}</span>
                     </button>
                   ))}
                 </div>
@@ -245,28 +259,32 @@ export function SettingsDialog({ isOpen, onClose, initialTab = 'servers' }: Sett
             ))}
           </div>
 
-          <div className="mt-auto pt-3 px-3 text-[10px] text-text-400">
+          <div className="mt-auto pt-3 px-2.5 xl:px-3 text-[10px] text-text-400">
             {t('version', { version: __APP_VERSION__ })}
           </div>
         </nav>
 
         {/* Right Content */}
         <div className="flex-1 min-w-0 flex flex-col">
-          <div className="shrink-0 border-b border-border-100/60 px-6 py-4 flex items-start justify-between gap-4">
+          {/* Content Header - sticky at top */}
+          <div className="shrink-0 border-b border-border-100/60 px-5 xl:px-6 py-3.5 flex items-center justify-between gap-4">
             <div className="min-w-0">
-              <div className="text-base font-semibold text-text-100">{activeTabMeta.label}</div>
-              <div className="text-[12px] text-text-400 mt-0.5 leading-relaxed">{activeTabMeta.description}</div>
+              <div className="text-[15px] font-semibold text-text-100">{activeTabMeta.label}</div>
+              <div className="text-[11.5px] text-text-400 mt-0.5 leading-relaxed truncate">
+                {activeTabMeta.description}
+              </div>
             </div>
             <button
               onClick={onClose}
-              className="p-2 text-text-400 hover:text-text-200 hover:bg-bg-100 rounded-md transition-colors -mr-1"
+              className="p-2 text-text-400 hover:text-text-200 hover:bg-bg-100 rounded-md transition-colors -mr-1 shrink-0"
               aria-label={t('closeSettings')}
             >
               <CloseIcon size={18} />
             </button>
           </div>
 
-          <div className="flex-1 min-h-0 py-5 px-6 overflow-y-auto custom-scrollbar">
+          {/* Scroll area - single scroll container for all tab content */}
+          <div ref={scrollRef} className="flex-1 min-h-0 py-5 px-5 xl:px-6 overflow-y-auto custom-scrollbar">
             <TabContent tab={tab} />
           </div>
         </div>

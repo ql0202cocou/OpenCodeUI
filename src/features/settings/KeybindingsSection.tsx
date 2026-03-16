@@ -228,7 +228,7 @@ export function KeybindingsSection() {
   }, [])
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs font-medium text-text-400 uppercase tracking-wider">{t('keybindings.title')}</span>
@@ -257,8 +257,8 @@ export function KeybindingsSection() {
         />
       </div>
 
-      {/* List */}
-      <div className="flex-1 overflow-y-auto -mx-1 custom-scrollbar">
+      {/* List - no inner scroll, parent handles scrolling */}
+      <div className="-mx-1">
         {grouped.length === 0 ? (
           <div className="py-8 text-center text-sm text-text-400">{t('common:noMatches')}</div>
         ) : (

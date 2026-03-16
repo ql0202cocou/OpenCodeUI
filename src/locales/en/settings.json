@@ -44,7 +44,10 @@
     "password": "Password",
     "passwordPlaceholder": "OPENCODE_SERVER_PASSWORD",
     "crossOriginWarning": "Cross-origin + password may not work in some browsers due to CORS restrictions.",
-    "credentialsStorage": "Credentials are stored in localStorage and sent via HTTP Basic Auth."
+    "credentialsStorage": "Credentials are stored in localStorage and sent via HTTP Basic Auth.",
+    "editServer": "Edit server",
+    "deleteServer": "Delete Server",
+    "deleteServerConfirm": "Remove \"{{name}}\" from the server list? This cannot be undone."
   },
   "chat": {
     "pathsFormatting": "Paths & Formatting",
