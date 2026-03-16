@@ -142,7 +142,7 @@ export const ToolPartView = memo(function ToolPartView({
 
   // ── Timeline layout (multi-tool groups) ──
   return (
-    <div className="group relative flex">
+    <div className="group relative flex min-w-0">
       {/* Timeline Column */}
       <div className="w-8 shrink-0 relative">
         {/* Top connector — 留 4px gap 到 icon */}
