@@ -441,18 +441,6 @@ const ToolGroup = memo(function ToolGroup({ parts, stepFinish, duration, turnDur
   // steps header: 仅多工具时显示
   const showStepsHeader = totalCount > 1
 
-  // steps header 入场动画 — 从无到有时 opacity + translateY 平滑出现
-  const headerRef = useRef<HTMLButtonElement>(null)
-  const headerAnimated = useRef(false)
-  useLayoutEffect(() => {
-    const el = headerRef.current
-    if (!el || headerAnimated.current) return
-    headerAnimated.current = true
-    el.style.opacity = '0'
-    el.style.transform = 'translateY(-4px)'
-    animate(el, { opacity: 1, transform: 'translateY(0px)' }, { duration: 0.15, ease: 'easeOut' })
-  }, [showStepsHeader])
-
   // 统一容器结构 — ToolPartView 始终在同一 React 树位置，
   // streaming→idle / 1→N 工具切换时不 remount，expanded 状态不丢失
   return (
@@ -460,7 +448,6 @@ const ToolGroup = memo(function ToolGroup({ parts, stepFinish, duration, turnDur
       <div className="flex flex-col">
         {showStepsHeader && (
           <button
-            ref={headerRef}
             onClick={() => setExpanded(!expanded)}
             className="flex items-center gap-1.5 py-1.5 text-text-400 text-sm hover:text-text-200 hover:bg-bg-200/30 rounded-md transition-colors"
           >
