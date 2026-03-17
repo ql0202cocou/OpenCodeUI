@@ -1,5 +1,15 @@
 # Changelog
 
+## [v0.2.6] - 2026-03-17
+
+- refactor: redesign folder recents with drag-to-reorder and compact session items (88b4139)
+- fix: resolve bugs introduced by Python-to-Rust router migration (335b82e)
+- refactor: migrate gateway router from Python to Rust (290087f)
+- Feature: Add ability for router to read config from environment variables (bddc46b)
+- refactor: create new Rust project opencodeui-router (dd96377)
+- Update image previews in README.md (be84586)
+- fix: 服务器编辑/删除按钮始终可见 (0037a17)
+
 ## [v0.2.5] - 2026-03-16
 
 - fix: 修复胶囊按钮和弹窗 header 图标与文字对齐 (a65e34e)
