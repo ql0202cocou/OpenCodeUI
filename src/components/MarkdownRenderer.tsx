@@ -1,12 +1,14 @@
 import { isValidElement, memo, useMemo } from 'react'
-import ReactMarkdown, { type Components } from 'react-markdown'
-import remarkGfm from 'remark-gfm'
+import { Streamdown, type Components } from 'streamdown'
+import { math } from '@streamdown/math'
 import { CodeBlock } from './CodeBlock'
 import { detectLanguage } from '../utils/languageUtils'
 
 interface MarkdownRendererProps {
   content: string
   className?: string
+  /** Whether the content is actively being streamed */
+  isStreaming?: boolean
 }
 
 /**
@@ -20,6 +22,18 @@ const InlineCode = memo(function InlineCode({ children }: { children: React.Reac
   )
 })
 
+/**
+ * Extract text content from React node tree (for code block extraction)
+ */
+function extractText(node: React.ReactNode): string {
+  if (typeof node === 'string' || typeof node === 'number') return String(node)
+  if (Array.isArray(node)) return node.map(extractText).join('')
+  return ''
+}
+
+/**
+ * Extract code and language from a <pre> element's children
+ */
 function extractBlockCode(children: React.ReactNode): { code: string; language?: string } | null {
   const codeNode = Array.isArray(children) ? children[0] : children
   if (!isValidElement(codeNode)) return null
@@ -34,22 +48,27 @@ function extractBlockCode(children: React.ReactNode): { code: string; language?:
   }
 }
 
-function extractText(node: React.ReactNode): string {
-  if (typeof node === 'string' || typeof node === 'number') return String(node)
-  if (Array.isArray(node)) return node.map(extractText).join('')
-  return ''
-}
-
 /**
  * Main Markdown renderer component
+ *
+ * Uses Streamdown for streaming-optimized rendering:
+ * - Block-level memoization (completed blocks skip re-render)
+ * - Unterminated markdown block healing via remend
+ * - GFM support built-in
  */
-export const MarkdownRenderer = memo(function MarkdownRenderer({ content, className = '' }: MarkdownRendererProps) {
+export const MarkdownRenderer = memo(function MarkdownRenderer({
+  content,
+  className = '',
+  isStreaming = false,
+}: MarkdownRendererProps) {
   const components = useMemo<Components>(
     () => ({
-      code({ children }) {
+      // Inline code — Streamdown supports `inlineCode` as a dedicated key
+      inlineCode({ children }) {
         return <InlineCode>{children}</InlineCode>
       },
 
+      // Block code — delegate to our existing CodeBlock with shiki highlighting
       pre({ children }) {
         const blockCode = extractBlockCode(children)
         if (!blockCode) return <pre>{children}</pre>
@@ -61,7 +80,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({ content, classN
         )
       },
 
-      // Headings - Improved typography
+      // Headings
       h1: ({ children }) => (
         <h1 className="text-xl font-bold text-text-100 mt-8 mb-4 first:mt-0 last:mb-0 tracking-tight">{children}</h1>
       ),
@@ -105,14 +124,14 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({ content, classN
         </a>
       ),
 
-      // Blockquotes - Modern style
+      // Blockquotes
       blockquote: ({ children }) => (
         <blockquote className="border-l-2 border-accent-main-100 pl-4 py-1 my-4 first:mt-0 last:mb-0 bg-bg-200/30 rounded-r-md text-text-300 italic">
           {children}
         </blockquote>
       ),
 
-      // Tables - Modern style with striping
+      // Tables
       table: ({ children }) => (
         <div className="overflow-x-auto my-6 first:mt-0 last:mb-0 border border-border-200 rounded-lg shadow-sm w-full">
           <table className="min-w-full border-collapse text-sm divide-y divide-border-200">{children}</table>
@@ -143,9 +162,9 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({ content, classN
     <div
       className={`markdown-content text-sm text-text-100 leading-relaxed break-words min-w-0 overflow-hidden ${className}`}
     >
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+      <Streamdown components={components} isAnimating={isStreaming} controls={false} plugins={{ math }}>
         {content}
-      </ReactMarkdown>
+      </Streamdown>
     </div>
   )
 })

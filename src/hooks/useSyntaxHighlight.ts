@@ -333,7 +333,9 @@ export function useSyntaxHighlight(code: string, options: HighlightOptions & { m
     }
 
     // 没有缓存，异步高亮
-    if (!isThemeOnlyChange) {
+    // 流式场景下保留上一帧的高亮结果，避免 null → html 闪烁
+    // 只在首次（没有旧结果时）才清空
+    if (!isThemeOnlyChange && prevKey === null) {
       setOutput(null)
     }
     setIsLoading(true)

@@ -9,11 +9,22 @@ vi.mock('./CodeBlock', () => ({
 }))
 
 describe('MarkdownRenderer', () => {
-  it('renders headings, inline code and fenced code blocks', () => {
-    render(<MarkdownRenderer content={'# Title\n\nUse `pnpm`\n\n```ts\nconst x = 1\n```'} />)
+  it('renders headings and inline code', () => {
+    render(<MarkdownRenderer content={'# Title\n\nUse `pnpm`'} />)
 
     expect(screen.getByRole('heading', { name: 'Title' })).toBeInTheDocument()
     expect(screen.getByText('pnpm')).toBeInTheDocument()
+  })
+
+  it('renders fenced code blocks via CodeBlock', () => {
+    render(<MarkdownRenderer content={'```ts\nconst x = 1\n```'} />)
+
     expect(screen.getByTestId('code-block')).toHaveTextContent('ts:const x = 1')
+  })
+
+  it('accepts isStreaming prop without crashing', () => {
+    render(<MarkdownRenderer content={'Hello **world**'} isStreaming={true} />)
+
+    expect(screen.getByRole('paragraph')).toHaveTextContent('Hello world')
   })
 })
