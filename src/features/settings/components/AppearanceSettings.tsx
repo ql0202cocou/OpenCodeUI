@@ -23,6 +23,9 @@ const PRESET_PREVIEW_COLORS: Record<string, { bg: string; accent: string; text: 
   eucalyptus: { bg: '#f0f3f0', accent: '#4d9e82', text: '#1e2e28' },
   claude: { bg: '#f3f0eb', accent: '#e87c2a', text: '#2d2a26' },
   breeze: { bg: '#f3f5f7', accent: '#2ba5a5', text: '#212d36' },
+  sakura: { bg: '#fdf2f4', accent: '#e85a8b', text: '#2d1f24' },
+  ocean: { bg: '#f0f5fa', accent: '#2b6cb0', text: '#1a2433' },
+  obsidian: { bg: '#fcfcfc', accent: '#262626', text: '#1a1a1a' },
   custom: { bg: '#f0f0f0', accent: '#888888', text: '#333333' },
 }
 
@@ -466,8 +469,15 @@ export function AppearanceSettings() {
       </SettingsCard>
 
       {showSaveDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-bg-100 border border-border-200 rounded-xl p-4 w-80 max-w-[90vw]">
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center animate-fade-in"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+          onClick={() => setShowSaveDialog(false)}
+        >
+          <div
+            className="bg-bg-100 border border-border-200 rounded-xl p-4 w-80 max-w-[90vw] shadow-2xl animate-scale-in"
+            onClick={e => e.stopPropagation()}
+          >
             <div className="text-[13px] font-medium text-text-100 mb-3">{t('appearance.saveTemplate')}</div>
             <input
               type="text"
