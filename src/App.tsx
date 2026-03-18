@@ -632,6 +632,7 @@ function App() {
                 messages={messages}
                 sessionId={routeSessionId}
                 isStreaming={isStreaming}
+                allowStreamingLayoutAnimation={isAtBottom}
                 loadState={loadState}
                 hasMoreHistory={hasMoreHistory}
                 onLoadMore={loadMoreHistory}

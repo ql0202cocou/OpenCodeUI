@@ -35,6 +35,7 @@ import type {
 
 interface MessageRendererProps {
   message: Message
+  allowStreamingLayoutAnimation?: boolean
   /** 回合总时长（毫秒），仅在回合最后一条 assistant 消息上有值 */
   turnDuration?: number
   onUndo?: (userMessageId: string) => void
@@ -44,6 +45,7 @@ interface MessageRendererProps {
 
 export const MessageRenderer = memo(function MessageRenderer({
   message,
+  allowStreamingLayoutAnimation = true,
   turnDuration,
   onUndo,
   canUndo,
@@ -56,7 +58,14 @@ export const MessageRenderer = memo(function MessageRenderer({
     return <UserMessageView message={message} onUndo={onUndo} canUndo={canUndo} />
   }
 
-  return <AssistantMessageView message={message} turnDuration={turnDuration} onEnsureParts={onEnsureParts} />
+  return (
+    <AssistantMessageView
+      message={message}
+      allowStreamingLayoutAnimation={allowStreamingLayoutAnimation}
+      turnDuration={turnDuration}
+      onEnsureParts={onEnsureParts}
+    />
+  )
 })
 
 // ============================================
@@ -277,10 +286,12 @@ const UserMessageView = memo(function UserMessageView({ message, onUndo, canUndo
 
 const AssistantMessageView = memo(function AssistantMessageView({
   message,
+  allowStreamingLayoutAnimation = true,
   turnDuration,
   onEnsureParts,
 }: {
   message: Message
+  allowStreamingLayoutAnimation?: boolean
   turnDuration?: number
   onEnsureParts?: (messageId: string) => void
 }) {
@@ -345,8 +356,8 @@ const AssistantMessageView = memo(function AssistantMessageView({
 
   return (
     <div ref={wrapperRef} className="flex flex-col gap-2 w-full group">
-      {/* 消息级 SmoothHeight：streaming 时所有高度变化统一平滑过渡 */}
-      <SmoothHeight isActive={!!isStreaming}>
+      {/* 只在贴底跟随时保留高度补间；用户看历史时关闭，避免消息生长把视口顶走 */}
+      <SmoothHeight isActive={!!isStreaming && allowStreamingLayoutAnimation}>
         <div className="flex flex-col gap-2">
           {renderItems.map((item: RenderItem, idx: number) => {
             // 耗时只在最后一个含 stepFinish 的 item 上显示

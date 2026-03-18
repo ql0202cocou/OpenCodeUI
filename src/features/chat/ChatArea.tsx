@@ -24,6 +24,7 @@ interface ChatAreaProps {
   messages: Message[]
   sessionId?: string | null
   isStreaming?: boolean
+  allowStreamingLayoutAnimation?: boolean
   loadState?: 'idle' | 'loading' | 'loaded' | 'error'
   hasMoreHistory?: boolean
   onLoadMore?: () => void | Promise<void>
@@ -51,6 +52,7 @@ export const ChatArea = memo(
         messages,
         sessionId,
         isStreaming: _isStreaming = false,
+        allowStreamingLayoutAnimation = true,
         loadState = 'idle',
         onLoadMore,
         onUndo,
@@ -272,9 +274,11 @@ export const ChatArea = memo(
             el.scrollTo({ top: 0, behavior: instant ? 'auto' : 'smooth' })
           },
           scrollToBottomIfAtBottom: () => {
-            if (!isAtBottomRef.current) return
             const el = scrollRef.current
-            if (el) el.scrollTop = 0
+            if (!el) return
+            // 自动跟随使用严格贴底判定，避免用户刚开始向上滚时还在宽松阈值内被抢回去。
+            if (Math.abs(el.scrollTop) > 2) return
+            el.scrollTop = 0
           },
           scrollToLastMessage: () => {
             if (visibleMessages.length === 0) return
@@ -337,6 +341,7 @@ export const ChatArea = memo(
                     >
                       <MessageRenderer
                         message={msg}
+                        allowStreamingLayoutAnimation={allowStreamingLayoutAnimation}
                         turnDuration={turnDurationMap.get(msg.info.id)}
                         onUndo={onUndo}
                         canUndo={canUndo}
@@ -352,7 +357,15 @@ export const ChatArea = memo(
             </div>
           )
         },
-        [registerMessage, onUndo, canUndo, messageMaxWidthClass, sessionId, turnDurationMap],
+        [
+          registerMessage,
+          onUndo,
+          canUndo,
+          messageMaxWidthClass,
+          sessionId,
+          turnDurationMap,
+          allowStreamingLayoutAnimation,
+        ],
       )
 
       return (
