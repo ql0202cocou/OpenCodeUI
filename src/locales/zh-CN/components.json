@@ -23,7 +23,8 @@
     "closeTerminal": "关闭终端"
   },
   "diffViewer": {
-    "noChanges": "无变更"
+    "noChanges": "无变更",
+    "linesUnchanged": "{{count}} 行未修改"
   },
   "rightPanel": {
     "loadingPanel": "加载面板中...",

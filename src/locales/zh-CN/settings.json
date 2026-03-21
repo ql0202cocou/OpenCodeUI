@@ -112,6 +112,8 @@
     "diffStyleDesc": "差异视图中变更行的标记方式",
     "diffStyleMarkers": "+/− 符号",
     "diffStyleChangeBars": "变更条",
+    "codeWordWrap": "代码自动换行",
+    "codeWordWrapDesc": "让代码块和 diff 在可用宽度内自动换行，减少横向滚动",
     "language": "语言",
     "languageDesc": "选择界面显示语言",
     "languageAuto": "自动（浏览器）",

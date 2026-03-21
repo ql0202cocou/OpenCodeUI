@@ -19,4 +19,17 @@ describe('CodePreview', () => {
     expect(screen.getByText('1')).toBeInTheDocument()
     expect(screen.getByText('2')).toBeInTheDocument()
   })
+
+  it('uses wrapped rendering without proxy horizontal scrollbar when word wrap is enabled', () => {
+    const { container } = render(
+      <CodePreview
+        code={'const someRidiculouslyLongIdentifierName = "value"\nsecond line'}
+        language="text"
+        wordWrap={true}
+      />,
+    )
+
+    expect(screen.getByText('const someRidiculouslyLongIdentifierName = "value"')).toBeInTheDocument()
+    expect(container.querySelector('.sticky')).toBeNull()
+  })
 })

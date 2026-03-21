@@ -152,6 +152,12 @@ export function useTheme() {
     themeStore.setToolDisplayMode(mode)
   }, [])
 
+  // ---- Code Word Wrap ----
+
+  const setCodeWordWrap = useCallback((enabled: boolean) => {
+    themeStore.setCodeWordWrap(enabled)
+  }, [])
+
   return {
     // 日夜模式（向后兼容）
     mode: state.colorMode,
@@ -195,5 +201,9 @@ export function useTheme() {
     // 工具调用显示模式
     toolDisplayMode: state.toolDisplayMode,
     setToolDisplayMode,
+
+    // 代码块 / diff 自动换行
+    codeWordWrap: state.codeWordWrap,
+    setCodeWordWrap,
   }
 }

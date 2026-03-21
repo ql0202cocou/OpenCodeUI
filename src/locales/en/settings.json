@@ -112,6 +112,8 @@
     "diffStyleDesc": "How changes are indicated in the diff gutter",
     "diffStyleMarkers": "+/− Markers",
     "diffStyleChangeBars": "Change Bars",
+    "codeWordWrap": "Code Word Wrap",
+    "codeWordWrapDesc": "Wrap code blocks and diffs to the available width to reduce horizontal scrolling",
     "language": "Language",
     "languageDesc": "Choose the display language for the interface",
     "languageAuto": "Auto (Browser)",

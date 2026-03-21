@@ -330,6 +330,8 @@ export function AppearanceSettings() {
     setCustomCSS,
     diffStyle,
     setDiffStyle,
+    codeWordWrap,
+    setCodeWordWrap,
   } = useTheme()
 
   return (
@@ -398,6 +400,16 @@ export function AppearanceSettings() {
               />
               <div className="text-[11px] text-text-500 mt-1">{t('appearance.diffStyleDesc')}</div>
             </div>
+          </div>
+
+          <div className="pt-3 border-t border-border-100/55">
+            <SettingRow
+              label={t('appearance.codeWordWrap')}
+              description={t('appearance.codeWordWrapDesc')}
+              onClick={() => setCodeWordWrap(!codeWordWrap)}
+            >
+              <Toggle enabled={codeWordWrap} onChange={() => setCodeWordWrap(!codeWordWrap)} />
+            </SettingRow>
           </div>
 
           <div className="pt-3 border-t border-border-100/55">

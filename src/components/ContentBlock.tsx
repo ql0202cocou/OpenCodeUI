@@ -84,10 +84,10 @@ export const ContentBlock = memo(function ContentBlock({
 
   // 响应式 maxHeight，外部传入的值优先
   const responsiveMaxHeight = useResponsiveMaxHeight()
-  const maxHeight = maxHeightProp ?? responsiveMaxHeight
 
   const isError = variant === 'error'
   const isAmbient = variant === 'ambient'
+  const maxHeight = maxHeightProp ?? responsiveMaxHeight
   const isDiff = !!diff
   const hasContent = !!content?.trim() || isDiff || stats?.exit !== undefined
   const canCollapse = collapsible && hasContent && !isAmbient

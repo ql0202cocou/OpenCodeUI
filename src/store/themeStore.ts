@@ -82,6 +82,7 @@ const DEFAULT_STEP_FINISH_DISPLAY: StepFinishDisplay = {
 const DEFAULT_REASONING_DISPLAY_MODE: ReasoningDisplayMode = 'capsule'
 const DEFAULT_DIFF_STYLE: DiffStyle = 'markers'
 const DEFAULT_TOOL_DISPLAY_MODE: ToolDisplayMode = 'detailed'
+const DEFAULT_CODE_WORD_WRAP = false
 
 export interface ThemeState {
   /** 当前选中的主题风格 ID */
@@ -102,6 +103,8 @@ export interface ThemeState {
   diffStyle: DiffStyle
   /** 工具调用显示模式 */
   toolDisplayMode: ToolDisplayMode
+  /** 代码块/diff 自动换行 */
+  codeWordWrap: boolean
 }
 
 // ============================================
@@ -117,6 +120,7 @@ const STORAGE_KEY_REASONING_DISPLAY_MODE = 'reasoning-display-mode'
 const STORAGE_KEY_WIDE_MODE = 'chat-wide-mode'
 const STORAGE_KEY_DIFF_STYLE = 'diff-style'
 const STORAGE_KEY_TOOL_DISPLAY_MODE = 'tool-display-mode'
+const STORAGE_KEY_CODE_WORD_WRAP = 'code-word-wrap'
 
 // ============================================
 // DOM Style Element IDs
@@ -160,6 +164,9 @@ class ThemeStore {
     const savedToolDisplayMode = localStorage.getItem(STORAGE_KEY_TOOL_DISPLAY_MODE) as ToolDisplayMode | null
     const toolDisplayMode: ToolDisplayMode = savedToolDisplayMode === 'ambient' ? 'ambient' : DEFAULT_TOOL_DISPLAY_MODE
 
+    const savedCodeWordWrap = localStorage.getItem(STORAGE_KEY_CODE_WORD_WRAP)
+    const codeWordWrap = savedCodeWordWrap === 'true' ? true : DEFAULT_CODE_WORD_WRAP
+
     this.state = {
       presetId: savedPreset,
       colorMode: savedMode,
@@ -170,6 +177,7 @@ class ThemeStore {
       wideMode: savedWideMode,
       diffStyle,
       toolDisplayMode,
+      codeWordWrap,
     }
   }
 
@@ -205,6 +213,9 @@ class ThemeStore {
   }
   get toolDisplayMode() {
     return this.state.toolDisplayMode
+  }
+  get codeWordWrap() {
+    return this.state.codeWordWrap
   }
 
   /** 获取当前主题预设（内置主题返回对象，自定义返回 undefined） */
@@ -307,6 +318,13 @@ class ThemeStore {
     if (this.state.toolDisplayMode === mode) return
     this.state = { ...this.state, toolDisplayMode: mode }
     localStorage.setItem(STORAGE_KEY_TOOL_DISPLAY_MODE, mode)
+    this.emit()
+  }
+
+  setCodeWordWrap(enabled: boolean) {
+    if (this.state.codeWordWrap === enabled) return
+    this.state = { ...this.state, codeWordWrap: enabled }
+    localStorage.setItem(STORAGE_KEY_CODE_WORD_WRAP, String(enabled))
     this.emit()
   }
 

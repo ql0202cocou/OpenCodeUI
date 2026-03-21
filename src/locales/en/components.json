@@ -23,7 +23,8 @@
     "closeTerminal": "Close terminal"
   },
   "diffViewer": {
-    "noChanges": "No changes"
+    "noChanges": "No changes",
+    "linesUnchanged": "{{count}} lines unchanged"
   },
   "rightPanel": {
     "loadingPanel": "Loading panel...",
