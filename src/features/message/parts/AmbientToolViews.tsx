@@ -56,14 +56,17 @@ export const AmbientToolGroup = memo(function AmbientToolGroup({
     p => findPermissionForTool(pendingPermissions, p.callID) || findQuestionForTool(pendingQuestions, p.callID),
   )
 
-  // 编辑/写入/执行类工具完成后——仅作为初始值展开，用户可以手动收起
-  const hasSideEffectDone = parts.some(p => {
-    const cat = getToolCategory(p.tool)
-    return (cat === 'edit' || cat === 'execute') && (p.state.status === 'completed' || p.state.status === 'error')
-  })
+  // 新内容（streaming）：编辑/写入/todo 默认展开，其他收起
+  // question 不在这里——它靠 hasPendingInteraction 驱动，回答后自动收起
+  // 历史加载（非 streaming）：全部收起
+  const needsUserAttention =
+    !!isStreaming &&
+    parts.some(p => {
+      const cat = getToolCategory(p.tool)
+      return cat === 'edit' || cat === 'todo'
+    })
 
-  const [expanded, setExpanded] = useState(hasSideEffectDone)
-  // 只有 pending 交互强制展开，其他靠 state
+  const [expanded, setExpanded] = useState(needsUserAttention)
   const effectiveExpanded = expanded || hasPendingInteraction
   const shouldRenderBody = useDelayedRender(effectiveExpanded)
 
@@ -169,18 +172,11 @@ export const AmbientToolGroup = memo(function AmbientToolGroup({
 })
 
 // ============================================
-// AmbientToolItem — 展开后的单个工具行
-// 依然是文字风格，不是卡片，没有箭头
+// AmbientToolItem — 工具列表中的一行
+// 没有自己的展开/收起，摘要就是 steps header 控制整个列表
 // ============================================
 
 const AmbientToolItem = memo(function AmbientToolItem({ part }: { part: ToolPart }) {
-  // 有副作用的工具（编辑/写入/执行）完成后默认展开，方便审查
-  const category = getToolCategory(part.tool)
-  const hasSideEffect = category === 'edit' || category === 'execute'
-  const isFinished = part.state.status === 'completed' || part.state.status === 'error'
-  const [expanded, setExpanded] = useState(hasSideEffect && isFinished)
-  const shouldRenderBody = useDelayedRender(expanded)
-
   const { state, tool: toolName } = part
   const title = state.title || ''
   const dur = state.time?.start && state.time?.end ? state.time.end - state.time.start : undefined
@@ -193,8 +189,7 @@ const AmbientToolItem = memo(function AmbientToolItem({ part }: { part: ToolPart
   const permissionRequest = findPermissionForTool(pendingPermissions, part.callID)
   const questionRequest = findQuestionForTool(pendingQuestions, part.callID)
 
-  // 有 pending question/permission 时，跳过工具名行，直接渲染 inline UI
-  // 摘要里已经说了"正在提问"/"正在执行"，这里不需要再重复工具名
+  // 有 pending question/permission 时，直接渲染 inline UI
   if (permissionRequest) {
     return (
       <div className="min-w-0">
@@ -218,55 +213,30 @@ const AmbientToolItem = memo(function AmbientToolItem({ part }: { part: ToolPart
 
   return (
     <div className="min-w-0">
-      <span
-        role="button"
-        tabIndex={0}
-        className="group/item inline-flex items-baseline gap-1.5 w-full text-left py-0.5 cursor-pointer"
-        onClick={() => setExpanded(!expanded)}
-        onKeyDown={e => {
-          if (e.key === 'Enter' || e.key === ' ') setExpanded(!expanded)
-        }}
-        aria-expanded={expanded}
-      >
-        {/* 工具名 */}
+      {/* 工具名行 */}
+      <div className="inline-flex items-baseline gap-1.5 w-full text-left py-0.5">
         <span
           className={`text-[12px] leading-5 shrink-0 ${
-            isActive
-              ? 'reasoning-shimmer-text'
-              : isError
-                ? 'text-danger-100'
-                : 'text-text-400 group-hover/item:text-text-300'
+            isActive ? 'reasoning-shimmer-text' : isError ? 'text-danger-100' : 'text-text-400'
           }`}
         >
           {formatToolName(toolName)}
         </span>
 
-        {/* title / file path */}
         {title && (
           <span className="text-[12px] leading-5 text-text-400 truncate min-w-0 flex-1 opacity-60">{title}</span>
         )}
 
-        {/* 状态 */}
         <span className="inline-flex items-center gap-1.5 ml-auto shrink-0">
           {dur !== undefined && state.status === 'completed' && (
             <span className="text-[11px] text-text-500 tabular-nums">{formatDuration(dur)}</span>
           )}
         </span>
-      </span>
+      </div>
 
-      {/* 可展开的详情 */}
-      <div
-        className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${
-          expanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
-        }`}
-      >
-        <div className="min-h-0 min-w-0 overflow-hidden" style={{ clipPath: 'inset(0 -100% 0 -100%)' }}>
-          {shouldRenderBody && (
-            <div className="pb-1.5 pt-0.5">
-              <AmbientToolBody part={part} />
-            </div>
-          )}
-        </div>
+      {/* Body — 永远显示 */}
+      <div className="pb-1.5 pt-0.5">
+        <AmbientToolBody part={part} />
       </div>
     </div>
   )

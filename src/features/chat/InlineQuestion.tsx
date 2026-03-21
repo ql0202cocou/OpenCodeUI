@@ -116,9 +116,9 @@ export const InlineQuestion = memo(function InlineQuestion({
   })
 
   return (
-    <div className="my-1.5 rounded-lg border border-border-200/50 bg-bg-200/20 overflow-hidden">
+    <div className="my-1.5 space-y-3">
       {/* 问题列表 */}
-      <div className="px-3 py-2.5 space-y-3">
+      <div className="space-y-3">
         {request.questions.map((question, qIdx) => (
           <InlineQuestionItem
             key={qIdx}
@@ -136,18 +136,18 @@ export const InlineQuestion = memo(function InlineQuestion({
       </div>
 
       {/* 操作栏 */}
-      <div className="flex items-center gap-2 px-3 py-2 border-t border-border-200/30">
+      <div className="flex items-center gap-2">
         <button
           onClick={handleSubmit}
           disabled={!canSubmit || isReplying}
-          className="px-3 py-1 rounded-md bg-text-100 text-bg-000 text-[13px] font-medium hover:bg-text-200 transition-colors disabled:opacity-50"
+          className="px-2.5 py-0.5 rounded text-[12px] font-medium bg-text-100 text-bg-000 hover:bg-text-200 transition-colors disabled:opacity-50"
         >
           {t('common:submit')}
         </button>
         <button
           onClick={() => onReject(request.id)}
           disabled={isReplying}
-          className="px-3 py-1 rounded-md text-[13px] text-text-400 hover:text-text-200 hover:bg-bg-200 transition-colors disabled:opacity-50"
+          className="px-2.5 py-0.5 rounded text-[12px] text-text-400 hover:text-text-200 transition-colors disabled:opacity-50"
         >
           {t('common:skip')}
         </button>
