@@ -52,9 +52,13 @@ export const AmbientToolGroup = memo(function AmbientToolGroup({
 
   // 如果组内有 pending 权限/提问，强制展开（用户必须交互，不可收起）
   const { pendingPermissions, pendingQuestions } = useAmbientPermission()
-  const hasPendingInteraction = parts.some(
-    p => findPermissionForTool(pendingPermissions, p.callID) || findQuestionForTool(pendingQuestions, p.callID),
-  )
+  const hasPendingInteraction = parts.some(p => {
+    const childSessionId = getTaskChildSessionId(p)
+    return (
+      findPermissionForTool(pendingPermissions, p.callID, childSessionId) ||
+      findQuestionForTool(pendingQuestions, p.callID, childSessionId)
+    )
+  })
 
   // 新内容（streaming）：编辑/写入/todo 默认展开，其他收起
   // question 不在这里——它靠 hasPendingInteraction 驱动，回答后自动收起
@@ -186,8 +190,9 @@ const AmbientToolItem = memo(function AmbientToolItem({ part }: { part: ToolPart
   // 关联的权限请求 / 提问请求
   const { pendingPermissions, pendingQuestions, onPermissionReply, onQuestionReply, onQuestionReject, isReplying } =
     useAmbientPermission()
-  const permissionRequest = findPermissionForTool(pendingPermissions, part.callID)
-  const questionRequest = findQuestionForTool(pendingQuestions, part.callID)
+  const childSessionId = getTaskChildSessionId(part)
+  const permissionRequest = findPermissionForTool(pendingPermissions, part.callID, childSessionId)
+  const questionRequest = findQuestionForTool(pendingQuestions, part.callID, childSessionId)
 
   // 有 pending question/permission 时，直接渲染 inline UI
   if (permissionRequest) {
@@ -267,6 +272,17 @@ function AmbientToolBody({ part }: { part: ToolPart }) {
   }
 
   return <DefaultRenderer part={part} data={data} ambientMode />
+}
+
+// ============================================
+// Helpers
+// ============================================
+
+/** 对 task tool，从 metadata 中提取子 session ID */
+function getTaskChildSessionId(part: ToolPart): string | undefined {
+  if (part.tool.toLowerCase() !== 'task') return undefined
+  const metadata = part.state.metadata as Record<string, unknown> | undefined
+  return metadata?.sessionId as string | undefined
 }
 
 // (end of file)
