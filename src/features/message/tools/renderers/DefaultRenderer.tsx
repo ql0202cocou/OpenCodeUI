@@ -21,17 +21,24 @@ export function DefaultRenderer({ part, data, ambientMode }: ToolRendererProps &
 
   const showOutput = hasOutput || hasError || (!ambientMode && isActive && !hasOutput)
 
+  // ambient 模式下，只有白名单工具显示 input
+  const ambientShowInputTools = new Set(['bash', 'shell', 'terminal', 'cmd', 'sh'])
+  const showInputInAmbient = ambientShowInputTools.has(tool.toLowerCase())
+  const hideInput = ambientMode && !showInputInAmbient
+
   return (
     <div className="flex flex-col gap-2">
-      {/* Input - 沉浸模式下不显示 */}
-      {!ambientMode && (hasInput || (isActive && !hasInput)) && (
+      {/* Input */}
+      {!hideInput && (hasInput || (isActive && !hasInput)) && (
         <ContentBlock
           label={t('defaultRenderer.input')}
           content={data.input || ''}
           language={data.inputLang}
           isLoading={isActive && !hasInput}
           loadingText=""
-          defaultCollapsed={true}
+          defaultCollapsed={ambientMode ? false : true}
+          variant={ambientMode ? 'ambient' : undefined}
+          collapsible={ambientMode ? false : undefined}
         />
       )}
 

@@ -268,7 +268,8 @@ const AmbientToolItem = memo(function AmbientToolItem({ part }: { part: ToolPart
         <div className="overflow-hidden">
           {shouldRenderBody && (
             <div>
-              <AmbientToolBody part={part} />
+              {/* 有 pending permission 时不渲染工具内容，避免和权限 UI 的 diff 重复 */}
+              {!permissionRequest && <AmbientToolBody part={part} />}
               {/* 权限/提问 inline UI — 显示在工具内容下方 */}
               {permissionRequest && (
                 <div className="py-1">
