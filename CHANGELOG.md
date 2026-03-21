@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.2.10] - 2026-03-21
+
+- feat: restore forked prompts in the composer (0792cf6)
+- fix: keep folder recents aligned with live updates (a0c8899)
+- fix: improve long duration formatting (62e6d94)
+
 ## [v0.2.9] - 2026-03-19
 
 - fix: preserve custom audio when switching to builtin sounds (57119da)
