@@ -230,28 +230,6 @@ const AmbientToolItem = memo(function AmbientToolItem({ part }: { part: ToolPart
   const hasPending = !!permissionRequest || !!questionRequest
   const effectiveExpanded = expanded || hasPending
 
-  // 有 pending question/permission 时，直接渲染 inline UI（不走 body 折叠）
-  if (permissionRequest) {
-    return (
-      <div className="min-w-0 py-1">
-        <InlinePermission request={permissionRequest} onReply={onPermissionReply} isReplying={isReplying} />
-      </div>
-    )
-  }
-
-  if (questionRequest) {
-    return (
-      <div className="min-w-0 py-1">
-        <InlineQuestion
-          request={questionRequest}
-          onReply={onQuestionReply}
-          onReject={onQuestionReject}
-          isReplying={isReplying}
-        />
-      </div>
-    )
-  }
-
   return (
     <div className="min-w-0">
       {/* 工具名行 — 可点击切换展开 */}
@@ -291,6 +269,22 @@ const AmbientToolItem = memo(function AmbientToolItem({ part }: { part: ToolPart
           {shouldRenderBody && (
             <div>
               <AmbientToolBody part={part} />
+              {/* 权限/提问 inline UI — 显示在工具内容下方 */}
+              {permissionRequest && (
+                <div className="py-1">
+                  <InlinePermission request={permissionRequest} onReply={onPermissionReply} isReplying={isReplying} />
+                </div>
+              )}
+              {questionRequest && (
+                <div className="py-1">
+                  <InlineQuestion
+                    request={questionRequest}
+                    onReply={onQuestionReply}
+                    onReject={onQuestionReject}
+                    isReplying={isReplying}
+                  />
+                </div>
+              )}
             </div>
           )}
         </div>
