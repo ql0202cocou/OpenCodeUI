@@ -153,14 +153,14 @@ export const ContentBlock = memo(function ContentBlock({
   const containerClass = isError
     ? 'border border-danger-100/30 bg-danger-100/5'
     : isAmbient
-      ? 'bg-bg-100 border border-border-200/30'
+      ? '' // ambient: 无边框无背景，完全融入信息流
       : 'bg-bg-100 border border-border-200/40'
 
   // Header 样式
   const headerClass = isError
     ? 'bg-danger-100/8 hover:bg-danger-100/12'
     : isAmbient
-      ? '' // ambient: 无背景色，无 border-bottom，header 融入内容
+      ? '' // ambient: 无背景色，header 融入内容
       : 'bg-bg-200/40 hover:bg-bg-200/60'
 
   return (
@@ -169,7 +169,7 @@ export const ContentBlock = memo(function ContentBlock({
     >
       {/* Header */}
       <div
-        className={`flex items-center gap-2 px-3 ${isAmbient ? 'h-7' : 'h-8'} select-none transition-colors ${
+        className={`flex items-center gap-2 px-3 ${isAmbient ? 'h-6' : 'h-8'} select-none transition-colors ${
           canCollapse ? 'cursor-pointer' : ''
         } ${headerClass}`}
         onClick={canCollapse ? () => setCollapsed(!collapsed) : undefined}

@@ -1,4 +1,4 @@
-import { memo, useState, useMemo } from 'react'
+import { memo, useState, useMemo, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ToolPart, StepFinishPart } from '../../../types/message'
 import { useDelayedRender } from '../../../hooks'
@@ -67,20 +67,18 @@ export const AmbientToolGroup = memo(function AmbientToolGroup({
   const effectiveExpanded = expanded || hasPendingInteraction
   const shouldRenderBody = useDelayedRender(effectiveExpanded)
 
-  // 按状态分组统计
+  // 按实际状态分组统计
   const summaryText = useMemo(() => {
     const doneParts = parts.filter(p => p.state.status === 'completed' || p.state.status === 'error')
     const activeParts = parts.filter(p => p.state.status === 'running' || p.state.status === 'pending')
 
     const segments: string[] = []
 
-    // 已完成的——完成时
     if (doneParts.length > 0) {
       const cats = categorizeTools(doneParts.map(p => p.tool))
       segments.push(cats.map(({ category, count }) => t(`ambient.${category}`, { count })).join(t('ambient.separator')))
     }
 
-    // 进行中的——进行时
     if (activeParts.length > 0) {
       const cats = categorizeTools(activeParts.map(p => p.tool))
       segments.push(
@@ -105,11 +103,30 @@ export const AmbientToolGroup = memo(function AmbientToolGroup({
     return text
   }, [parts, errorCount, hasRunning, t])
 
+  // 摘要文案变化时的淡入过渡
+  const summaryRef = useRef<HTMLSpanElement>(null)
+  const prevTextRef = useRef(summaryText)
+  useEffect(() => {
+    if (prevTextRef.current !== summaryText && summaryRef.current) {
+      prevTextRef.current = summaryText
+      const el = summaryRef.current
+      el.style.opacity = '0.4'
+      requestAnimationFrame(() => {
+        el.style.transition = 'opacity 0.3s ease-out'
+        el.style.opacity = '1'
+      })
+    }
+  }, [summaryText])
+
+  // 扫光：有 running 的工具
+  const showShimmer = hasRunning
+
   return (
     <SmoothHeight isActive={!!isStreaming}>
       <div className="py-0.5">
         {/* 摘要 — 纯文字，点击展开 */}
         <span
+          ref={summaryRef}
           role="button"
           tabIndex={0}
           onClick={() => setExpanded(!expanded)}
@@ -118,7 +135,7 @@ export const AmbientToolGroup = memo(function AmbientToolGroup({
           }}
           aria-expanded={effectiveExpanded}
           className={`text-sm leading-relaxed cursor-pointer hover:text-text-200 transition-colors ${
-            hasRunning ? 'reasoning-shimmer-text' : 'text-text-300'
+            showShimmer ? 'reasoning-shimmer-text' : 'text-text-300'
           }`}
         >
           {summaryText}
