@@ -89,7 +89,7 @@ export const ContentBlock = memo(function ContentBlock({
   const responsiveMaxHeight = useResponsiveMaxHeight()
 
   const isError = variant === 'error'
-  const maxHeight = compact ? undefined : (maxHeightProp ?? responsiveMaxHeight)
+  const maxHeight = maxHeightProp ?? responsiveMaxHeight
   const isDiff = !!diff
   const hasContent = !!content?.trim() || isDiff || stats?.exit !== undefined
   const canCollapse = !compact && collapsible && hasContent
@@ -207,7 +207,7 @@ export const ContentBlock = memo(function ContentBlock({
           )}
 
           {/* Fullscreen button - 支持 diff 和代码 */}
-          {!compact && (isDiff || content?.trim()) && !collapsed && (
+          {(isDiff || content?.trim()) && !collapsed && (
             <button
               className="p-0.5 text-text-400 hover:text-text-200 rounded transition-colors"
               onClick={e => {
