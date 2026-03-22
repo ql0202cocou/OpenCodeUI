@@ -122,7 +122,7 @@ function HighlightedCommand({ command }: { command: string }) {
   if (highlighted) {
     return (
       <span
-        className="whitespace-pre-wrap break-all [&>pre]:!bg-transparent [&>pre]:!p-0 [&>pre]:!m-0 [&_code]:!bg-transparent [&_code]:!p-0"
+        className="whitespace-pre-wrap break-all [&>pre]:!bg-transparent [&>pre]:!p-0 [&>pre]:!m-0 [&>pre]:!whitespace-pre-wrap [&_code]:!bg-transparent [&_code]:!p-0 [&_code]:!whitespace-pre-wrap"
         dangerouslySetInnerHTML={{ __html: highlighted }}
       />
     )
