@@ -1,7 +1,7 @@
 /**
  * InlinePermission — 融入信息流的权限确认
  *
- * 复用 ContentBlock ambient variant，跟工具调用结果的渲染风格完全统一。
+ * 复用 ContentBlock inline variant，跟工具调用结果的渲染风格统一。
  * 操作按钮紧跟 ContentBlock 下方。
  */
 
@@ -58,13 +58,13 @@ export const InlinePermission = memo(function InlinePermission({
 
   return (
     <div className="space-y-2">
-      {/* 内容 — 复用 ContentBlock ambient variant，和工具调用结果一致 */}
+      {/* 内容 */}
       {isFileEdit && diffData ? (
         <ContentBlock
           label={request.permission}
           filePath={filepath}
           diff={diffData}
-          variant="ambient"
+          variant="inline"
           collapsible={false}
           maxHeight={150}
         />
@@ -73,7 +73,7 @@ export const InlinePermission = memo(function InlinePermission({
           label={request.permission}
           content={patternsText}
           language="bash"
-          variant="ambient"
+          variant="inline"
           collapsible={false}
           maxHeight={120}
         />

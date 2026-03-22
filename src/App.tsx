@@ -30,7 +30,7 @@ import type { Attachment } from './api'
 import { createPtySession } from './api/pty'
 import { autoApproveStore } from './store/autoApproveStore'
 import type { TerminalTab } from './store/layoutStore'
-import { AmbientPermissionContext, type AmbientPermissionContextValue } from './features/chat/AmbientPermissionContext'
+import { InlineToolRequestContext, type InlineToolRequestContextValue } from './features/chat/InlineToolRequestContext'
 import { useTheme } from './hooks/useTheme'
 
 const SettingsDialog = lazy(() =>
@@ -586,25 +586,20 @@ function App() {
   const [permissionCollapsed, setPermissionCollapsed] = useState(false)
   const [questionCollapsed, setQuestionCollapsed] = useState(false)
 
-  // 新的 request 到来时自动展开
   const permissionRequestId = pendingPermissionRequests[0]?.id
   const questionRequestId = pendingQuestionRequests[0]?.id
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- 响应新请求自动展开 UI
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 新请求到来时自动展开对应弹窗
     if (permissionRequestId) setPermissionCollapsed(false)
   }, [permissionRequestId])
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- 响应新请求自动展开 UI
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 新请求到来时自动展开对应弹窗
     if (questionRequestId) setQuestionCollapsed(false)
   }, [questionRequestId])
 
-  // ============================================
-  // Ambient Mode — 权限/提问 inline context
-  // ============================================
-  const { toolDisplayMode } = useTheme()
-  const isAmbientMode = toolDisplayMode === 'ambient'
+  const { inlineToolRequests } = useTheme()
 
-  const ambientPermissionCtx = useMemo<AmbientPermissionContextValue>(
+  const inlineToolRequestCtx = useMemo<InlineToolRequestContextValue>(
     () => ({
       pendingPermissions: pendingPermissionRequests,
       pendingQuestions: pendingQuestionRequests,
@@ -672,7 +667,7 @@ function App() {
 
             {/* Scrollable Area */}
             <div className="absolute inset-0">
-              <AmbientPermissionContext.Provider value={ambientPermissionCtx}>
+              <InlineToolRequestContext.Provider value={inlineToolRequestCtx}>
                 <ChatArea
                   ref={chatAreaRef}
                   messages={messages}
@@ -691,7 +686,7 @@ function App() {
                   onVisibleMessageIdsChange={handleVisibleIdsChange}
                   onAtBottomChange={setIsAtBottom}
                 />
-              </AmbientPermissionContext.Provider>
+              </InlineToolRequestContext.Provider>
             </div>
 
             {/* Outline Index - 消息目录索引 */}
@@ -759,7 +754,7 @@ function App() {
                 showScrollToBottom={!isAtBottom}
                 onScrollToBottom={() => chatAreaRef.current?.scrollToBottom()}
                 collapsedPermission={
-                  pendingPermissionRequests.length > 0 && permissionCollapsed
+                  !inlineToolRequests && pendingPermissionRequests.length > 0 && permissionCollapsed
                     ? {
                         label: t('chat:permissionDialog.permission', {
                           permission: pendingPermissionRequests[0].permission,
@@ -770,7 +765,10 @@ function App() {
                     : undefined
                 }
                 collapsedQuestion={
-                  pendingPermissionRequests.length === 0 && pendingQuestionRequests.length > 0 && questionCollapsed
+                  !inlineToolRequests &&
+                  pendingPermissionRequests.length === 0 &&
+                  pendingQuestionRequests.length > 0 &&
+                  questionCollapsed
                     ? {
                         label: t('chat:questionDialog.title'),
                         queueLength: pendingQuestionRequests.length,
@@ -781,8 +779,7 @@ function App() {
               />
             </div>
 
-            {/* Permission Dialog — ambient 模式下权限在信息流中 inline 渲染 */}
-            {!isAmbientMode && pendingPermissionRequests.length > 0 && (
+            {!inlineToolRequests && pendingPermissionRequests.length > 0 && (
               <PermissionDialog
                 request={pendingPermissionRequests[0]}
                 onReply={reply => handlePermissionReply(pendingPermissionRequests[0].id, reply, effectiveDirectory)}
@@ -794,8 +791,7 @@ function App() {
               />
             )}
 
-            {/* Question Dialog — ambient 模式下提问在信息流中 inline 渲染 */}
-            {!isAmbientMode && pendingPermissionRequests.length === 0 && pendingQuestionRequests.length > 0 && (
+            {!inlineToolRequests && pendingPermissionRequests.length === 0 && pendingQuestionRequests.length > 0 && (
               <QuestionDialog
                 request={pendingQuestionRequests[0]}
                 onReply={answers => handleQuestionReply(pendingQuestionRequests[0].id, answers, effectiveDirectory)}

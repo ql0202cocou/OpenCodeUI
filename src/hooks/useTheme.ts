@@ -3,7 +3,7 @@ import { flushSync } from 'react-dom'
 import { THEME_SWITCH_DISABLE_MS } from '../constants'
 import { themeStore, type ColorMode } from '../store/themeStore'
 import type { StepFinishDisplay } from '../store/themeStore'
-import type { ReasoningDisplayMode, DiffStyle, ToolDisplayMode } from '../store/themeStore'
+import type { ReasoningDisplayMode, DiffStyle } from '../store/themeStore'
 
 // 保持向后兼容的类型别名
 export type ThemeMode = ColorMode
@@ -146,10 +146,10 @@ export function useTheme() {
     themeStore.setDiffStyle(style)
   }, [])
 
-  // ---- Tool Display Mode ----
+  // ---- Inline Tool Requests ----
 
-  const setToolDisplayMode = useCallback((mode: ToolDisplayMode) => {
-    themeStore.setToolDisplayMode(mode)
+  const setInlineToolRequests = useCallback((enabled: boolean) => {
+    themeStore.setInlineToolRequests(enabled)
   }, [])
 
   // ---- Code Word Wrap ----
@@ -198,9 +198,9 @@ export function useTheme() {
     diffStyle: state.diffStyle,
     setDiffStyle,
 
-    // 工具调用显示模式
-    toolDisplayMode: state.toolDisplayMode,
-    setToolDisplayMode,
+    // 工具内嵌权限/提问
+    inlineToolRequests: state.inlineToolRequests,
+    setInlineToolRequests,
 
     // 代码块 / diff 自动换行
     codeWordWrap: state.codeWordWrap,

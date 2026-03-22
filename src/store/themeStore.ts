@@ -68,9 +68,6 @@ export type ReasoningDisplayMode = 'capsule' | 'italic' | 'markdown'
 /** Diff 行标记风格：markers = 传统 +/- 符号, changeBars = 行号左侧彩色竖条 */
 export type DiffStyle = 'markers' | 'changeBars'
 
-/** 工具调用显示模式：detailed = 显性（带图标、timeline）, ambient = 隐性（纯文字、折叠摘要） */
-export type ToolDisplayMode = 'detailed' | 'ambient'
-
 const DEFAULT_STEP_FINISH_DISPLAY: StepFinishDisplay = {
   tokens: true,
   cache: true,
@@ -81,7 +78,7 @@ const DEFAULT_STEP_FINISH_DISPLAY: StepFinishDisplay = {
 
 const DEFAULT_REASONING_DISPLAY_MODE: ReasoningDisplayMode = 'capsule'
 const DEFAULT_DIFF_STYLE: DiffStyle = 'markers'
-const DEFAULT_TOOL_DISPLAY_MODE: ToolDisplayMode = 'detailed'
+const DEFAULT_INLINE_TOOL_REQUESTS = false
 const DEFAULT_CODE_WORD_WRAP = false
 
 export interface ThemeState {
@@ -101,8 +98,8 @@ export interface ThemeState {
   wideMode: boolean
   /** Diff 行标记风格 */
   diffStyle: DiffStyle
-  /** 工具调用显示模式 */
-  toolDisplayMode: ToolDisplayMode
+  /** 是否在工具下方内嵌权限/提问请求 */
+  inlineToolRequests: boolean
   /** 代码块/diff 自动换行 */
   codeWordWrap: boolean
 }
@@ -119,7 +116,7 @@ const STORAGE_KEY_STEP_FINISH_DISPLAY = 'step-finish-display'
 const STORAGE_KEY_REASONING_DISPLAY_MODE = 'reasoning-display-mode'
 const STORAGE_KEY_WIDE_MODE = 'chat-wide-mode'
 const STORAGE_KEY_DIFF_STYLE = 'diff-style'
-const STORAGE_KEY_TOOL_DISPLAY_MODE = 'tool-display-mode'
+const STORAGE_KEY_INLINE_TOOL_REQUESTS = 'inline-tool-requests'
 const STORAGE_KEY_CODE_WORD_WRAP = 'code-word-wrap'
 
 // ============================================
@@ -161,8 +158,9 @@ class ThemeStore {
     const savedDiffStyle = localStorage.getItem(STORAGE_KEY_DIFF_STYLE) as DiffStyle | null
     const diffStyle: DiffStyle = savedDiffStyle === 'changeBars' ? 'changeBars' : DEFAULT_DIFF_STYLE
 
-    const savedToolDisplayMode = localStorage.getItem(STORAGE_KEY_TOOL_DISPLAY_MODE) as ToolDisplayMode | null
-    const toolDisplayMode: ToolDisplayMode = savedToolDisplayMode === 'ambient' ? 'ambient' : DEFAULT_TOOL_DISPLAY_MODE
+    const savedInlineToolRequests = localStorage.getItem(STORAGE_KEY_INLINE_TOOL_REQUESTS)
+    const inlineToolRequests =
+      savedInlineToolRequests === null ? DEFAULT_INLINE_TOOL_REQUESTS : savedInlineToolRequests === 'true'
 
     const savedCodeWordWrap = localStorage.getItem(STORAGE_KEY_CODE_WORD_WRAP)
     const codeWordWrap = savedCodeWordWrap === 'true' ? true : DEFAULT_CODE_WORD_WRAP
@@ -176,7 +174,7 @@ class ThemeStore {
       reasoningDisplayMode,
       wideMode: savedWideMode,
       diffStyle,
-      toolDisplayMode,
+      inlineToolRequests,
       codeWordWrap,
     }
   }
@@ -211,8 +209,8 @@ class ThemeStore {
   get diffStyle() {
     return this.state.diffStyle
   }
-  get toolDisplayMode() {
-    return this.state.toolDisplayMode
+  get inlineToolRequests() {
+    return this.state.inlineToolRequests
   }
   get codeWordWrap() {
     return this.state.codeWordWrap
@@ -314,10 +312,10 @@ class ThemeStore {
     this.emit()
   }
 
-  setToolDisplayMode(mode: ToolDisplayMode) {
-    if (this.state.toolDisplayMode === mode) return
-    this.state = { ...this.state, toolDisplayMode: mode }
-    localStorage.setItem(STORAGE_KEY_TOOL_DISPLAY_MODE, mode)
+  setInlineToolRequests(enabled: boolean) {
+    if (this.state.inlineToolRequests === enabled) return
+    this.state = { ...this.state, inlineToolRequests: enabled }
+    localStorage.setItem(STORAGE_KEY_INLINE_TOOL_REQUESTS, String(enabled))
     this.emit()
   }
 

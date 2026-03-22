@@ -1,9 +1,17 @@
-import { memo, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ChevronDownIcon, ChevronRightIcon } from '../../../components/Icons'
 import type { ToolPart } from '../../../types/message'
 import { useDelayedRender } from '../../../hooks'
+import { useTheme } from '../../../hooks/useTheme'
 import { formatToolName, formatDuration } from '../../../utils/formatUtils'
+import {
+  useInlineToolRequests,
+  findPermissionRequestForTool,
+  findQuestionRequestForTool,
+} from '../../chat/InlineToolRequestContext'
+import { InlinePermission } from '../../chat/InlinePermission'
+import { InlineQuestion } from '../../chat/InlineQuestion'
 import {
   getToolIcon,
   extractToolData,
@@ -34,11 +42,6 @@ export const ToolPartView = memo(function ToolPartView({
   compact = false,
 }: ToolPartViewProps) {
   const { t } = useTranslation('message')
-  const [expanded, setExpanded] = useState(() => {
-    return part.state.status === 'running' || part.state.status === 'pending'
-  })
-  const shouldRenderBody = useDelayedRender(expanded)
-
   const { state, tool: toolName } = part
   const title = state.title || ''
 
@@ -46,6 +49,30 @@ export const ToolPartView = memo(function ToolPartView({
 
   const isActive = state.status === 'running' || state.status === 'pending'
   const isError = state.status === 'error'
+  const [expanded, setExpanded] = useState(() => isActive)
+  const { inlineToolRequests } = useTheme()
+
+  const { pendingPermissions, pendingQuestions, onPermissionReply, onQuestionReply, onQuestionReject, isReplying } =
+    useInlineToolRequests()
+  const childSessionId = getTaskChildSessionId(part)
+  const permissionRequest = inlineToolRequests
+    ? findPermissionRequestForTool(pendingPermissions, part.callID, childSessionId)
+    : undefined
+  const questionRequest = inlineToolRequests
+    ? findQuestionRequestForTool(pendingQuestions, part.callID, childSessionId)
+    : undefined
+  const hasPendingInteraction = !!permissionRequest || !!questionRequest
+  const hideToolBodyForPermission =
+    permissionRequest?.permission === 'edit' || permissionRequest?.permission === 'write'
+  const effectiveExpanded = expanded || hasPendingInteraction
+  const shouldRenderBody = useDelayedRender(effectiveExpanded)
+
+  useEffect(() => {
+    if (isActive || hasPendingInteraction) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 运行中或待交互时保持展开
+      setExpanded(true)
+    }
+  }, [isActive, hasPendingInteraction])
 
   // Shared icon element
   const toolIcon = (
@@ -116,7 +143,7 @@ export const ToolPartView = memo(function ToolPartView({
                 {t('toolPart.failed')}
               </span>
               <span className="text-text-500">
-                {expanded ? <ChevronDownIcon size={12} /> : <ChevronRightIcon size={12} />}
+                {effectiveExpanded ? <ChevronDownIcon size={12} /> : <ChevronRightIcon size={12} />}
               </span>
             </div>
           </button>
@@ -124,13 +151,32 @@ export const ToolPartView = memo(function ToolPartView({
           {/* Body */}
           <div
             className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
-              expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+              effectiveExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
             }`}
           >
             <div className="overflow-hidden">
               {shouldRenderBody && (
                 <div className="pl-2 pr-2.5 pb-2 pt-1">
-                  <ToolBody part={part} />
+                  {!hideToolBodyForPermission && <ToolBody part={part} />}
+                  {permissionRequest && (
+                    <div className={hideToolBodyForPermission ? '' : 'pt-2'}>
+                      <InlinePermission
+                        request={permissionRequest}
+                        onReply={onPermissionReply}
+                        isReplying={isReplying}
+                      />
+                    </div>
+                  )}
+                  {questionRequest && (
+                    <div className="pt-2">
+                      <InlineQuestion
+                        request={questionRequest}
+                        onReply={onQuestionReply}
+                        onReject={onQuestionReject}
+                        isReplying={isReplying}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -201,7 +247,7 @@ export const ToolPartView = memo(function ToolPartView({
               {t('toolPart.failed')}
             </span>
             <span className="text-text-500">
-              {expanded ? <ChevronDownIcon size={12} /> : <ChevronRightIcon size={12} />}
+              {effectiveExpanded ? <ChevronDownIcon size={12} /> : <ChevronRightIcon size={12} />}
             </span>
           </div>
         </button>
@@ -209,13 +255,28 @@ export const ToolPartView = memo(function ToolPartView({
         {/* Body - grid collapse */}
         <div
           className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
-            expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+            effectiveExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
           }`}
         >
           <div className="overflow-hidden">
             {shouldRenderBody && (
               <div className="pl-2 pr-2.5 pb-2 pt-1">
-                <ToolBody part={part} />
+                {!hideToolBodyForPermission && <ToolBody part={part} />}
+                {permissionRequest && (
+                  <div className={hideToolBodyForPermission ? '' : 'pt-2'}>
+                    <InlinePermission request={permissionRequest} onReply={onPermissionReply} isReplying={isReplying} />
+                  </div>
+                )}
+                {questionRequest && (
+                  <div className="pt-2">
+                    <InlineQuestion
+                      request={questionRequest}
+                      onReply={onQuestionReply}
+                      onReject={onQuestionReject}
+                      isReplying={isReplying}
+                    />
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -249,6 +310,12 @@ function ToolBody({ part }: { part: ToolPart }) {
   }
 
   return <DefaultRenderer part={part} data={data} />
+}
+
+function getTaskChildSessionId(part: ToolPart): string | undefined {
+  if (part.tool.toLowerCase() !== 'task') return undefined
+  const metadata = part.state.metadata as Record<string, unknown> | undefined
+  return metadata?.sessionId as string | undefined
 }
 
 // ============================================

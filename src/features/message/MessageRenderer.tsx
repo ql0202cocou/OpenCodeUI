@@ -6,10 +6,14 @@ import { CopyButton, SmoothHeight } from '../../components/ui'
 import { useDelayedRender } from '../../hooks'
 import { useTheme } from '../../hooks/useTheme'
 import {
+  useInlineToolRequests,
+  findPermissionRequestForTool,
+  findQuestionRequestForTool,
+} from '../chat/InlineToolRequestContext'
+import {
   TextPartView,
   ReasoningPartView,
   ToolPartView,
-  AmbientToolGroup,
   FilePartView,
   AgentPartView,
   SyntheticTextPartView,
@@ -327,7 +331,7 @@ const AssistantMessageView = memo(function AssistantMessageView({
   onEnsureParts?: (messageId: string) => void
 }) {
   const { parts, isStreaming, info } = message
-  const { stepFinishDisplay, toolDisplayMode } = useTheme()
+  const { stepFinishDisplay } = useTheme()
 
   const wrapperRef = useEntryGrowAnimation(info.time.created)
 
@@ -403,21 +407,6 @@ const AssistantMessageView = memo(function AssistantMessageView({
               )
 
             if (item.type === 'tool-group') {
-              // Ambient 模式：纯文字摘要，视觉降权
-              if (toolDisplayMode === 'ambient') {
-                return (
-                  <AmbientToolGroup
-                    key={item.parts[0].id}
-                    parts={item.parts as ToolPart[]}
-                    stepFinish={item.stepFinish}
-                    duration={isLastStepFinish ? duration : undefined}
-                    turnDuration={isLastStepFinish ? turnDuration : undefined}
-                    isStreaming={isStreaming}
-                  />
-                )
-              }
-
-              // Detailed 模式（默认）：带图标、timeline
               return (
                 <ToolGroup
                   key={item.parts[0].id}
@@ -500,7 +489,19 @@ interface ToolGroupProps {
 const ToolGroup = memo(function ToolGroup({ parts, stepFinish, duration, turnDuration, isStreaming }: ToolGroupProps) {
   const { t } = useTranslation('message')
   const [expanded, setExpanded] = useState(true)
-  const shouldRenderBody = useDelayedRender(expanded)
+  const { inlineToolRequests } = useTheme()
+  const { pendingPermissions, pendingQuestions } = useInlineToolRequests()
+  const hasPendingInteraction =
+    inlineToolRequests &&
+    parts.some(part => {
+      const childSessionId = getTaskChildSessionId(part)
+      return (
+        findPermissionRequestForTool(pendingPermissions, part.callID, childSessionId) ||
+        findQuestionRequestForTool(pendingQuestions, part.callID, childSessionId)
+      )
+    })
+  const effectiveExpanded = expanded || hasPendingInteraction
+  const shouldRenderBody = useDelayedRender(effectiveExpanded)
 
   const doneCount = parts.filter(p => p.state.status === 'completed').length
   const totalCount = parts.length
@@ -523,7 +524,7 @@ const ToolGroup = memo(function ToolGroup({ parts, stepFinish, duration, turnDur
             className="flex items-center gap-1.5 py-1.5 text-text-400 text-sm hover:text-text-200 hover:bg-bg-200/30 rounded-md transition-colors"
           >
             <span className="inline-flex w-[14px] items-center justify-center shrink-0">
-              {expanded ? <ChevronDownIcon size={14} /> : <ChevronRightIcon size={14} />}
+              {effectiveExpanded ? <ChevronDownIcon size={14} /> : <ChevronRightIcon size={14} />}
             </span>
             <span className="inline-flex items-baseline gap-2 whitespace-nowrap">
               <span className="text-[13px] font-medium leading-tight">
@@ -531,7 +532,7 @@ const ToolGroup = memo(function ToolGroup({ parts, stepFinish, duration, turnDur
                   ? t('stepsCount', { done: totalCount, total: totalCount })
                   : t('stepsCount', { done: doneCount, total: totalCount })}
               </span>
-              {!expanded && stepFinish && (
+              {!effectiveExpanded && stepFinish && (
                 <span className="text-xs text-text-500 font-mono opacity-70">{formatTokens(stepFinish.tokens, t)}</span>
               )}
             </span>
@@ -541,7 +542,7 @@ const ToolGroup = memo(function ToolGroup({ parts, stepFinish, duration, turnDur
         <div
           className={
             showStepsHeader
-              ? `grid transition-[grid-template-rows] duration-300 ease-in-out ${expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`
+              ? `grid transition-[grid-template-rows] duration-300 ease-in-out ${effectiveExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`
               : ''
           }
         >
@@ -585,6 +586,12 @@ function formatTokens(
     return t('tokensK', { count: (total / 1000).toFixed(1) })
   }
   return `${total} ${t('tokens')}`
+}
+
+function getTaskChildSessionId(part: ToolPart): string | undefined {
+  if (part.tool.toLowerCase() !== 'task') return undefined
+  const metadata = part.state.metadata as Record<string, unknown> | undefined
+  return metadata?.sessionId as string | undefined
 }
 
 // ============================================

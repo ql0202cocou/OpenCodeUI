@@ -9,7 +9,7 @@ import type { ToolRendererProps, ExtractedToolData } from '../types'
 // 通用的 Input/Output 渲染逻辑
 // ============================================
 
-export function DefaultRenderer({ part, data, ambientMode }: ToolRendererProps & { ambientMode?: boolean }) {
+export function DefaultRenderer({ part, data }: ToolRendererProps) {
   const { t } = useTranslation('message')
   const { state, tool } = part
   const isActive = state.status === 'running' || state.status === 'pending'
@@ -19,39 +19,25 @@ export function DefaultRenderer({ part, data, ambientMode }: ToolRendererProps &
   const hasOutput = !!(data.files || data.diff || data.output?.trim() || data.exitCode !== undefined)
   const hasDiagnostics = !!data.diagnostics?.length
 
-  const showOutput = hasOutput || hasError || (!ambientMode && isActive && !hasOutput)
-
-  // ambient 模式下，只有白名单工具显示 input
-  const ambientShowInputTools = new Set(['bash', 'shell', 'terminal', 'cmd', 'sh'])
-  const showInputInAmbient = ambientShowInputTools.has(tool.toLowerCase())
-  const hideInput = ambientMode && !showInputInAmbient
+  const showOutput = hasOutput || hasError || (isActive && !hasOutput)
 
   return (
     <div className="flex flex-col gap-2">
       {/* Input */}
-      {!hideInput && (hasInput || (isActive && !hasInput)) && (
+      {(hasInput || (isActive && !hasInput)) && (
         <ContentBlock
           label={t('defaultRenderer.input')}
           content={data.input || ''}
           language={data.inputLang}
           isLoading={isActive && !hasInput}
           loadingText=""
-          defaultCollapsed={ambientMode ? false : true}
-          variant={ambientMode ? 'ambient' : undefined}
-          collapsible={ambientMode ? false : undefined}
+          defaultCollapsed={true}
         />
       )}
 
       {/* Output */}
       {showOutput && (
-        <OutputBlock
-          tool={tool}
-          data={data}
-          isActive={isActive && !ambientMode}
-          hasError={hasError}
-          hasOutput={hasOutput}
-          ambientMode={ambientMode}
-        />
+        <OutputBlock tool={tool} data={data} isActive={isActive} hasError={hasError} hasOutput={hasOutput} />
       )}
 
       {/* Diagnostics */}
@@ -70,21 +56,14 @@ interface OutputBlockProps {
   isActive: boolean
   hasError: boolean
   hasOutput: boolean
-  ambientMode?: boolean
 }
 
-function OutputBlock({ tool, data, isActive, hasError, hasOutput, ambientMode }: OutputBlockProps) {
+function OutputBlock({ tool, data, isActive, hasError, hasOutput }: OutputBlockProps) {
   const { t } = useTranslation('message')
-  // 沉浸模式：ambient 样式 + 不可折叠
-  const ambientProps = ambientMode
-    ? { variant: 'ambient' as const, collapsible: false as const, defaultCollapsed: false as const }
-    : {}
 
   // 1. Error 优先
   if (hasError) {
-    return (
-      <ContentBlock label={t('defaultRenderer.error')} content={data.error || ''} variant="error" {...ambientProps} />
-    )
+    return <ContentBlock label={t('defaultRenderer.error')} content={data.error || ''} variant="error" />
   }
 
   // 2. 工具活跃时（running/pending）统一显示 loading
@@ -110,7 +89,6 @@ function OutputBlock({ tool, data, isActive, hasError, hasOutput, ambientMode }:
                   : undefined)
               }
               language={detectLanguage(file.filePath)}
-              {...ambientProps}
             />
           ))}
         </div>
@@ -126,7 +104,6 @@ function OutputBlock({ tool, data, isActive, hasError, hasOutput, ambientMode }:
           diff={data.diff}
           diffStats={data.diffStats}
           language={data.outputLang}
-          {...ambientProps}
         />
       )
     }
@@ -139,13 +116,12 @@ function OutputBlock({ tool, data, isActive, hasError, hasOutput, ambientMode }:
         language={data.outputLang}
         filePath={data.filePath}
         stats={data.exitCode !== undefined ? { exit: data.exitCode } : undefined}
-        {...ambientProps}
       />
     )
   }
 
   // 4. 无输出
-  return <ContentBlock label={t('defaultRenderer.output')} {...ambientProps} />
+  return <ContentBlock label={t('defaultRenderer.output')} />
 }
 
 // ============================================

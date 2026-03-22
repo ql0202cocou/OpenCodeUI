@@ -31,33 +31,6 @@
     "running": "运行中",
     "failed": "失败"
   },
-  "ambient": {
-    "read": "读取了 {{count}} 个文件",
-    "read_active": "正在读取文件",
-    "search": "搜索了 {{count}} 次",
-    "search_active": "正在搜索",
-    "edit": "编辑了 {{count}} 个文件",
-    "edit_active": "正在编辑文件",
-    "execute": "运行了 {{count}} 条命令",
-    "execute_active": "正在运行命令",
-    "network": "抓取了 {{count}} 个网页",
-    "network_active": "正在抓取网页",
-    "think": "推理了 {{count}} 次",
-    "think_active": "正在推理",
-    "task": "运行了 {{count}} 个子任务",
-    "task_active": "正在运行 {{count}} 个子任务",
-    "todo": "更新了任务列表",
-    "todo_active": "正在更新任务列表",
-    "question": "提出了 {{count}} 个问题",
-    "question_active": "正在提问",
-    "other": "调用了 {{count}} 个工具",
-    "other_active": "正在调用工具",
-    "separator": "，",
-    "summaryCompact": "{{detail}}等共 {{total}} 步操作",
-    "errorSuffix": "，失败 {{count}} 次",
-    "runningSuffix": "...",
-    "failed": "失败"
-  },
   "todo": {
     "tasks": "任务",
     "completedCount": "{{completed}}/{{total}}"
