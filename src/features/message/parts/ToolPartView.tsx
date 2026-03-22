@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { diffLines } from 'diff'
 import { ChevronDownIcon, ChevronRightIcon } from '../../../components/Icons'
@@ -36,6 +36,8 @@ interface ToolPartViewProps {
   compact?: boolean
   /** Descriptive steps mode: no icon/timeline, flat rows aligned with step summary. */
   descriptive?: boolean
+  /** Parent assistant message is still streaming. */
+  isStreaming?: boolean
 }
 
 export const ToolPartView = memo(function ToolPartView({
@@ -44,6 +46,7 @@ export const ToolPartView = memo(function ToolPartView({
   isLast = false,
   compact = false,
   descriptive = false,
+  isStreaming = false,
 }: ToolPartViewProps) {
   const { t } = useTranslation('message')
   const { state, tool: toolName } = part
@@ -54,6 +57,7 @@ export const ToolPartView = memo(function ToolPartView({
   const isActive = state.status === 'running' || state.status === 'pending'
   const isError = state.status === 'error'
   const [expanded, setExpanded] = useState(() => isActive)
+  const hasAutoExpandedReadableRef = useRef(false)
   const { inlineToolRequests, immersiveMode } = useTheme()
 
   const { pendingPermissions, pendingQuestions, onPermissionReply, onQuestionReply, onQuestionReject, isReplying } =
@@ -70,15 +74,22 @@ export const ToolPartView = memo(function ToolPartView({
     permissionRequest?.permission === 'edit' || permissionRequest?.permission === 'write'
   const effectiveExpanded = expanded || hasPendingInteraction
   const shouldRenderBody = useDelayedRender(effectiveExpanded)
+  const isReadable = isReadableTool(toolName)
 
   useEffect(() => {
     if (isActive || hasPendingInteraction) {
+      if (immersiveMode && descriptive && isReadable) {
+        hasAutoExpandedReadableRef.current = true
+      }
       // eslint-disable-next-line react-hooks/set-state-in-effect -- 运行中或待交互时保持展开
       setExpanded(true)
-    } else if (immersiveMode && descriptive && !isReadableTool(toolName)) {
+    } else if (immersiveMode && descriptive && !isReadable) {
       setExpanded(false)
+    } else if (immersiveMode && descriptive && isStreaming && isReadable && !hasAutoExpandedReadableRef.current) {
+      hasAutoExpandedReadableRef.current = true
+      setExpanded(true)
     }
-  }, [isActive, hasPendingInteraction, immersiveMode, descriptive, toolName])
+  }, [isActive, hasPendingInteraction, immersiveMode, descriptive, isStreaming, isReadable])
 
   // Shared icon element
   const toolIcon = (

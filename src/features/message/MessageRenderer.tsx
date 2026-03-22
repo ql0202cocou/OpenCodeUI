@@ -538,6 +538,7 @@ const ToolGroup = memo(function ToolGroup({ parts, stepFinish, duration, turnDur
   // descriptive 模式默认收起，运行时展开，完成后保持展开
   // 沉浸模式下：没有可读工具则完成后自动收起
   const [expanded, setExpanded] = useState(() => (descriptiveToolSteps ? false : true))
+  const hasAutoExpandedReadableRef = useRef(false)
 
   useEffect(() => {
     if (!descriptiveToolSteps) return
@@ -548,9 +549,18 @@ const ToolGroup = memo(function ToolGroup({ parts, stepFinish, duration, turnDur
       return
     }
     if (hasActiveTools || hasPendingInteraction) {
+      if (immersiveMode && hasReadableTools) {
+        hasAutoExpandedReadableRef.current = true
+      }
+      setExpanded(true)
+      return
+    }
+    // 某些可读工具（如 todo）可能首帧已完成，错过 running 态；流仍在继续时也自动展开一次
+    if (immersiveMode && isStreaming && hasReadableTools && !hasAutoExpandedReadableRef.current) {
+      hasAutoExpandedReadableRef.current = true
       setExpanded(true)
     }
-  }, [descriptiveToolSteps, hasActiveTools, hasPendingInteraction, immersiveMode, hasReadableTools])
+  }, [descriptiveToolSteps, hasActiveTools, hasPendingInteraction, immersiveMode, hasReadableTools, isStreaming])
 
   const effectiveExpanded = expanded || hasPendingInteraction
   const shouldRenderBody = useDelayedRender(effectiveExpanded)
@@ -641,6 +651,7 @@ const ToolGroup = memo(function ToolGroup({ parts, stepFinish, duration, turnDur
                   isLast={idx === parts.length - 1}
                   compact={isSingleCompact}
                   descriptive={descriptiveToolSteps}
+                  isStreaming={isStreaming}
                 />
               ))}
           </div>
