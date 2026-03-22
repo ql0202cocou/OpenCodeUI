@@ -1,15 +1,17 @@
 /**
  * InlinePermission — 融入信息流的权限确认
  *
- * 复用 ContentBlock inline variant，跟工具调用结果的渲染风格统一。
+ * 复用工具调用结果的 ContentBlock 渲染风格。
  * 操作按钮紧跟 ContentBlock 下方。
  */
 
 import { memo } from 'react'
+import { useSyncExternalStore } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ApiPermissionRequest, PermissionReply } from '../../api'
 import { ContentBlock } from '../../components'
 import { autoApproveStore } from '../../store'
+import { themeStore } from '../../store/themeStore'
 
 interface InlinePermissionProps {
   request: ApiPermissionRequest
@@ -23,6 +25,8 @@ export const InlinePermission = memo(function InlinePermission({
   isReplying,
 }: InlinePermissionProps) {
   const { t } = useTranslation(['chat', 'common'])
+  const { toolCardStyle } = useSyncExternalStore(themeStore.subscribe, themeStore.getSnapshot)
+  const isCompact = toolCardStyle === 'compact'
 
   const metadata = request.metadata
   const diff = metadata?.diff as string | undefined
@@ -64,18 +68,16 @@ export const InlinePermission = memo(function InlinePermission({
           label={request.permission}
           filePath={filepath}
           diff={diffData}
-          variant="inline"
           collapsible={false}
-          maxHeight={150}
+          compact={isCompact}
         />
       ) : patternsText ? (
         <ContentBlock
           label={request.permission}
           content={patternsText}
           language="bash"
-          variant="inline"
           collapsible={false}
-          maxHeight={120}
+          compact={isCompact}
         />
       ) : null}
 

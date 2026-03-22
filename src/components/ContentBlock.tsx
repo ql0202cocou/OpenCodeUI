@@ -31,7 +31,7 @@ export interface ContentBlockProps {
   /** 语言 */
   language?: string
   /** 样式变体 */
-  variant?: 'default' | 'error' | 'inline'
+  variant?: 'default' | 'error'
   /** 默认折叠 */
   defaultCollapsed?: boolean
   /** 最大高度（px），0 表示不限制 */
@@ -89,11 +89,10 @@ export const ContentBlock = memo(function ContentBlock({
   const responsiveMaxHeight = useResponsiveMaxHeight()
 
   const isError = variant === 'error'
-  const isInline = variant === 'inline'
   const maxHeight = compact ? undefined : (maxHeightProp ?? responsiveMaxHeight)
   const isDiff = !!diff
   const hasContent = !!content?.trim() || isDiff || stats?.exit !== undefined
-  const canCollapse = !compact && collapsible && hasContent && !isInline
+  const canCollapse = !compact && collapsible && hasContent
   const lang = language || (filePath ? detectLanguage(filePath) : 'text')
   const fileName = filePath?.split(/[/\\]/).pop()
 
@@ -150,29 +149,21 @@ export const ContentBlock = memo(function ContentBlock({
   }, [isDiff])
 
   // 是否展开内容区
-  const showBody = (hasContent && !collapsed) || (isLoading && !hasContent) || isInline
+  const showBody = (hasContent && !collapsed) || (isLoading && !hasContent)
 
   // 容器样式
   const containerClass = isError
     ? 'border border-danger-100/30 bg-danger-100/5'
-    : isInline
-      ? 'bg-bg-100 border border-border-200/30'
-      : 'bg-bg-100 border border-border-200/40'
+    : 'bg-bg-100 border border-border-200/40'
 
   // Header 样式
-  const headerClass = isError
-    ? 'bg-danger-100/8 hover:bg-danger-100/12'
-    : isInline
-      ? ''
-      : 'bg-bg-200/40 hover:bg-bg-200/60'
+  const headerClass = isError ? 'bg-danger-100/8 hover:bg-danger-100/12' : 'bg-bg-200/40 hover:bg-bg-200/60'
 
   return (
-    <div
-      className={`${isInline ? 'rounded-md' : 'rounded-lg'} overflow-hidden text-xs contain-content ${containerClass}`}
-    >
+    <div className={`rounded-lg overflow-hidden text-xs contain-content ${containerClass}`}>
       {/* Header */}
       <div
-        className={`flex items-center gap-2 px-3 ${isInline ? 'h-6' : 'h-8'} select-none transition-colors ${
+        className={`flex items-center gap-2 px-3 h-8 select-none transition-colors ${
           canCollapse ? 'cursor-pointer' : ''
         } ${headerClass}`}
         onClick={canCollapse ? () => setCollapsed(!collapsed) : undefined}
@@ -186,7 +177,7 @@ export const ContentBlock = memo(function ContentBlock({
           )}
           <span
             className={`font-medium font-mono leading-none whitespace-nowrap ${
-              isError ? 'text-danger-100' : isInline ? 'text-text-500' : 'text-text-300'
+              isError ? 'text-danger-100' : 'text-text-300'
             }`}
           >
             {label}
