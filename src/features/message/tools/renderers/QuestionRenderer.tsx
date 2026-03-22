@@ -53,6 +53,11 @@ export function QuestionRenderer({ part, data }: ToolRendererProps) {
     return null
   }
 
+  // 用户跳过 / error 不渲染
+  if (data.error || state.status === 'error') {
+    return null
+  }
+
   if (qaList.length === 0) {
     return null
   }
