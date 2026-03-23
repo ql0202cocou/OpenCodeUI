@@ -682,19 +682,9 @@ function formatTokens(
   return `${total} ${t('tokens')}`
 }
 
-type ToolSummaryCategory =
-  | 'execute'
-  | 'edit'
-  | 'read'
-  | 'search'
-  | 'network'
-  | 'task'
-  | 'todo'
-  | 'question'
-  | 'think'
-  | 'other'
+type ToolSummaryCategory = 'execute' | 'edit' | 'explore' | 'network' | 'task' | 'todo' | 'question' | 'think' | 'other'
 
-type ToolSummaryPhase = 'done' | 'active'
+type ToolSummaryPhase = 'done' | 'active' | 'failed'
 
 interface SummarySegment {
   text: string
@@ -707,28 +697,67 @@ function buildDescriptiveToolStepsSummary(
 ): SummarySegment[] {
   const sep = t('toolSteps.separator')
   const segments: SummarySegment[] = []
+  const MAX_CATEGORIES = 3
 
-  const doneTexts = collectToolSummaryCounts(parts.filter(part => part.state.status === 'completed')).map(
-    ({ category, count }) => formatToolSummarySegment(category, count, 'done', t),
-  )
-  const failedCount = parts.filter(part => part.state.status === 'error').length
-  const activeTexts = collectToolSummaryCounts(parts.filter(isToolPartActive)).map(({ category, count }) =>
-    formatToolSummarySegment(category, count, 'active', t),
-  )
+  // ── 按类别汇总 done / failed / active ──
+  const categoryOrder: ToolSummaryCategory[] = []
+  const doneMap = new Map<ToolSummaryCategory, number>()
+  const failedMap = new Map<ToolSummaryCategory, number>()
+  const activeMap = new Map<ToolSummaryCategory, number>()
 
-  for (let i = 0; i < doneTexts.length; i++) {
-    if (i > 0) segments.push({ text: sep, type: 'normal' })
-    segments.push({ text: doneTexts[i], type: 'normal' })
+  for (const part of parts) {
+    const cat = getToolSummaryCategory(part.tool)
+    if (!doneMap.has(cat)) {
+      categoryOrder.push(cat)
+      doneMap.set(cat, 0)
+      failedMap.set(cat, 0)
+      activeMap.set(cat, 0)
+    }
+    if (part.state.status === 'completed') doneMap.set(cat, (doneMap.get(cat) || 0) + 1)
+    else if (part.state.status === 'error') failedMap.set(cat, (failedMap.get(cat) || 0) + 1)
+    else if (isToolPartActive(part)) activeMap.set(cat, (activeMap.get(cat) || 0) + 1)
   }
 
-  if (failedCount > 0) {
-    if (segments.length > 0) segments.push({ text: sep, type: 'normal' })
-    segments.push({ text: t('toolSteps.failed', { count: failedCount }), type: 'error' })
+  // ── 已完成 + 失败（合并同类别）──
+  // 先收集所有完成态类别（含纯失败的类别）
+  const finishedCategories = categoryOrder.filter(cat => (doneMap.get(cat) || 0) > 0 || (failedMap.get(cat) || 0) > 0)
+
+  const pushFinishedSegments = (cats: ToolSummaryCategory[]) => {
+    for (const cat of cats) {
+      const done = doneMap.get(cat) || 0
+      const failed = failedMap.get(cat) || 0
+      if (segments.length > 0) segments.push({ text: sep, type: 'normal' })
+
+      if (done > 0 && failed > 0) {
+        // 同类别既有成功又有失败：合并成一句
+        const total = done + failed
+        segments.push({ text: formatToolSummarySegment(cat, total, 'done', t), type: 'normal' })
+        segments.push({ text: t('toolSteps.failedSuffix', { count: failed }), type: 'error' })
+      } else if (done > 0) {
+        segments.push({ text: formatToolSummarySegment(cat, done, 'done', t), type: 'normal' })
+      } else {
+        // 纯失败
+        segments.push({ text: formatToolSummarySegment(cat, failed, 'failed', t), type: 'error' })
+      }
+    }
   }
 
-  for (let i = 0; i < activeTexts.length; i++) {
+  if (finishedCategories.length <= MAX_CATEGORIES) {
+    pushFinishedSegments(finishedCategories)
+  } else {
+    pushFinishedSegments(finishedCategories.slice(0, MAX_CATEGORIES))
+    const restCount = finishedCategories
+      .slice(MAX_CATEGORIES)
+      .reduce((sum, cat) => sum + (doneMap.get(cat) || 0) + (failedMap.get(cat) || 0), 0)
+    segments.push({ text: sep, type: 'normal' })
+    segments.push({ text: t('toolSteps.moreActions', { count: restCount }), type: 'normal' })
+  }
+
+  // ── 运行中 ──
+  const activeCategories = categoryOrder.filter(cat => (activeMap.get(cat) || 0) > 0)
+  for (const cat of activeCategories) {
     if (segments.length > 0) segments.push({ text: sep, type: 'normal' })
-    segments.push({ text: activeTexts[i], type: 'active' })
+    segments.push({ text: formatToolSummarySegment(cat, activeMap.get(cat) || 0, 'active', t), type: 'active' })
   }
 
   if (segments.length === 0) {
@@ -738,50 +767,14 @@ function buildDescriptiveToolStepsSummary(
   return segments
 }
 
-function collectToolSummaryCounts(parts: ToolPart[]): Array<{ category: ToolSummaryCategory; count: number }> {
-  const counts = new Map<ToolSummaryCategory, number>()
-  const order: ToolSummaryCategory[] = []
-
-  for (const part of parts) {
-    const category = getToolSummaryCategory(part.tool)
-    if (!counts.has(category)) {
-      order.push(category)
-      counts.set(category, 0)
-    }
-    counts.set(category, (counts.get(category) || 0) + 1)
-  }
-
-  return order.map(category => ({ category, count: counts.get(category) || 0 }))
-}
-
 function formatToolSummarySegment(
   category: ToolSummaryCategory,
   count: number,
   phase: ToolSummaryPhase,
   t: (key: string, opts?: Record<string, unknown>) => string,
 ): string {
-  switch (category) {
-    case 'execute':
-      return t(phase === 'active' ? 'toolSteps.executeActive' : 'toolSteps.executeDone', { count })
-    case 'edit':
-      return t(phase === 'active' ? 'toolSteps.editActive' : 'toolSteps.editDone', { count })
-    case 'read':
-      return t(phase === 'active' ? 'toolSteps.readActive' : 'toolSteps.readDone', { count })
-    case 'search':
-      return t(phase === 'active' ? 'toolSteps.searchActive' : 'toolSteps.searchDone', { count })
-    case 'network':
-      return t(phase === 'active' ? 'toolSteps.networkActive' : 'toolSteps.networkDone', { count })
-    case 'task':
-      return t(phase === 'active' ? 'toolSteps.taskActive' : 'toolSteps.taskDone', { count })
-    case 'todo':
-      return t(phase === 'active' ? 'toolSteps.todoActive' : 'toolSteps.todoDone', { count })
-    case 'question':
-      return t(phase === 'active' ? 'toolSteps.questionActive' : 'toolSteps.questionDone', { count })
-    case 'think':
-      return t(phase === 'active' ? 'toolSteps.thinkActive' : 'toolSteps.thinkDone', { count })
-    default:
-      return t(phase === 'active' ? 'toolSteps.otherActive' : 'toolSteps.otherDone', { count })
-  }
+  const key = `toolSteps.${category}${phase.charAt(0).toUpperCase()}${phase.slice(1)}`
+  return t(key, { count })
 }
 
 function getToolSummaryCategory(toolName: string): ToolSummaryCategory {
@@ -808,9 +801,15 @@ function getToolSummaryCategory(toolName: string): ToolSummaryCategory {
   ) {
     return 'edit'
   }
-  if (lower.includes('read') || lower.includes('cat')) return 'read'
-  if (lower.includes('search') || lower.includes('find') || lower.includes('grep') || lower.includes('glob')) {
-    return 'search'
+  if (
+    lower.includes('read') ||
+    lower.includes('cat') ||
+    lower.includes('search') ||
+    lower.includes('find') ||
+    lower.includes('grep') ||
+    lower.includes('glob')
+  ) {
+    return 'explore'
   }
   if (
     lower.includes('web') ||
