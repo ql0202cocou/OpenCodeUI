@@ -950,7 +950,6 @@ textarea.custom-scrollbar::-webkit-scrollbar-thumb {
  */
 .chat-message-item {
   content-visibility: auto;
-  contain-intrinsic-size: auto 500px;
 }
 
 .prepending .chat-message-item {
