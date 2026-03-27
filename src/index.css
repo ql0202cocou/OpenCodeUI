@@ -824,19 +824,31 @@ body {
  * 注意：
  *  - backdrop-filter 里不能用 var()，webkit2gtk (Linux Tauri) 不支持
  *  - -webkit- 前缀必须写在非前缀前面，否则构建工具会删掉非前缀版本
+ *  - 毛玻璃开关由 <html data-glass> 属性驱动
+ *    有 data-glass → 半透明 + blur
+ *    无 data-glass → 实色背景回退
  */
 
+/* -- 共用底色 / 边框色 -- */
 .glass {
-  background-color: hsl(var(--bg-000) / 0.5);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  background-color: hsl(var(--bg-000));
   border-color: hsl(var(--border-200) / 0.6);
 }
 
-/* bg-100 底色的变体（sidebar footer、popover 等用 bg-100 的场景） */
 .glass-alt {
+  background-color: hsl(var(--bg-100));
+  border-color: hsl(var(--border-200) / 0.6);
+}
+
+/* -- data-glass 开启时：半透明 + blur -- */
+:root[data-glass] .glass {
+  background-color: hsl(var(--bg-000) / 0.5);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+:root[data-glass] .glass-alt {
   background-color: hsl(var(--bg-100) / 0.5);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
-  border-color: hsl(var(--border-200) / 0.6);
 }

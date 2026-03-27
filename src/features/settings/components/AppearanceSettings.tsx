@@ -325,6 +325,8 @@ export function AppearanceSettings() {
     setDiffStyle,
     codeWordWrap,
     setCodeWordWrap,
+    glassEffect,
+    setGlassEffect,
   } = useTheme()
   const { sidebarFolderRecents } = useLayoutStore()
 
@@ -373,6 +375,14 @@ export function AppearanceSettings() {
           onClick={toggleWideMode}
         >
           <Toggle enabled={isWideMode} onChange={toggleWideMode} />
+        </SettingRow>
+
+        <SettingRow
+          label={t('appearance.glassEffect')}
+          description={t('appearance.glassEffectDesc')}
+          onClick={() => setGlassEffect(!glassEffect)}
+        >
+          <Toggle enabled={glassEffect} onChange={() => setGlassEffect(!glassEffect)} />
         </SettingRow>
 
         <SettingRow
