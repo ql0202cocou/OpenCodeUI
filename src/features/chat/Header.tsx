@@ -188,7 +188,7 @@ export function Header({
           <IconButton
             aria-label={t('header.openSidebar')}
             onClick={onOpenSidebar}
-            className="hover:bg-bg-200/50 text-text-400 hover:text-text-100 -ml-2"
+            className="hover:bg-bg-200/50 text-text-400 hover:text-text-100"
           >
             <SidebarIcon size={18} />
           </IconButton>
