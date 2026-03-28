@@ -6,6 +6,7 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { useInputCapabilities } from '../../hooks/useInputCapabilities'
 import { useSessionActiveEntry } from '../../store/activeSessionStore'
 import { notificationStore, useHasUnreadCompletedNotification } from '../../store/notificationStore'
+import { SessionChildrenSlot } from '../chat/sidebar/SessionChildrenSlot'
 import type { ApiSession } from '../../api'
 
 interface SessionListProps {
@@ -25,8 +26,12 @@ interface SessionListProps {
   grouped?: boolean
   density?: 'default' | 'compact' | 'minimal'
   showStats?: boolean
-  /** Global 模式下显示每个 session 的目录名 */
   showDirectory?: boolean
+  /** 拉 /children 全量展示的父 session ID */
+  expandedChildSessionIds?: Set<string>
+  /** 按父 ID 分组的直接挂出来的子 session */
+  inlineChildSessions?: Map<string, ApiSession[]>
+  onSelectChildSession?: (session: ApiSession) => void
 }
 
 // 时间分组类型
@@ -50,6 +55,9 @@ export function SessionList({
   density = 'default',
   showStats = true,
   showDirectory = false,
+  expandedChildSessionIds,
+  inlineChildSessions,
+  onSelectChildSession,
 }: SessionListProps) {
   const { t } = useTranslation(['commands', 'common', 'chat'])
   const { preferTouchUi } = useInputCapabilities()
@@ -170,40 +178,66 @@ export function SessionList({
                 </h3>
                 <div className="space-y-0.5">
                   {groupSessions.map(session => (
-                    <SessionListItem
-                      key={session.id}
-                      session={session}
-                      isSelected={session.id === selectedId}
-                      onSelect={() => onSelect(session)}
-                      onDelete={() => setDeleteConfirm({ isOpen: true, sessionId: session.id })}
-                      onRename={newTitle => onRename(session.id, newTitle)}
-                      preferTouchUi={preferTouchUi}
-                      density={density}
-                      showStats={showStats}
-                      showDirectory={showDirectory}
-                    />
+                    <div key={session.id}>
+                      <SessionListItem
+                        session={session}
+                        isSelected={session.id === selectedId}
+                        onSelect={() => onSelect(session)}
+                        onDelete={() => setDeleteConfirm({ isOpen: true, sessionId: session.id })}
+                        onRename={newTitle => onRename(session.id, newTitle)}
+                        preferTouchUi={preferTouchUi}
+                        density={density}
+                        showStats={showStats}
+                        showDirectory={showDirectory}
+                      />
+                      {onSelectChildSession &&
+                        (expandedChildSessionIds?.has(session.id) || inlineChildSessions?.has(session.id)) && (
+                          <SessionChildrenSlot
+                            parentSession={session}
+                            selectedSessionId={selectedId}
+                            fetchAll={expandedChildSessionIds?.has(session.id)}
+                            children={inlineChildSessions?.get(session.id)}
+                            onSelect={onSelectChildSession}
+                          />
+                        )}
+                    </div>
                   ))}
                 </div>
               </div>
             )
           })
         ) : (
-          // Flat View (Search)
+          // Flat View
           <div className="space-y-0.5 mt-1">
-            {sessions.map(session => (
-              <SessionListItem
-                key={session.id}
-                session={session}
-                isSelected={session.id === selectedId}
-                onSelect={() => onSelect(session)}
-                onDelete={() => setDeleteConfirm({ isOpen: true, sessionId: session.id })}
-                onRename={newTitle => onRename(session.id, newTitle)}
-                preferTouchUi={preferTouchUi}
-                density={density}
-                showStats={showStats}
-                showDirectory={showDirectory}
-              />
-            ))}
+            {sessions.map(session => {
+              const inlineChildren = inlineChildSessions?.get(session.id)
+              const shouldFetchAll = expandedChildSessionIds?.has(session.id)
+              const hasChildren = shouldFetchAll || (inlineChildren && inlineChildren.length > 0)
+              return (
+                <div key={session.id}>
+                  <SessionListItem
+                    session={session}
+                    isSelected={session.id === selectedId}
+                    onSelect={() => onSelect(session)}
+                    onDelete={() => setDeleteConfirm({ isOpen: true, sessionId: session.id })}
+                    onRename={newTitle => onRename(session.id, newTitle)}
+                    preferTouchUi={preferTouchUi}
+                    density={density}
+                    showStats={showStats}
+                    showDirectory={showDirectory}
+                  />
+                  {hasChildren && onSelectChildSession && (
+                    <SessionChildrenSlot
+                      parentSession={session}
+                      selectedSessionId={selectedId}
+                      fetchAll={shouldFetchAll}
+                      children={inlineChildren}
+                      onSelect={onSelectChildSession}
+                    />
+                  )}
+                </div>
+              )
+            })}
           </div>
         )}
 

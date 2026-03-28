@@ -328,7 +328,7 @@ export function AppearanceSettings() {
     glassEffect,
     setGlassEffect,
   } = useTheme()
-  const { sidebarFolderRecents, sidebarFolderRecentsShowDiff } = useLayoutStore()
+  const { sidebarFolderRecents, sidebarFolderRecentsShowDiff, sidebarShowChildSessions } = useLayoutStore()
 
   return (
     <div>
@@ -438,6 +438,17 @@ export function AppearanceSettings() {
           <Toggle
             enabled={sidebarFolderRecentsShowDiff}
             onChange={() => layoutStore.setSidebarFolderRecentsShowDiff(!sidebarFolderRecentsShowDiff)}
+          />
+        </SettingRow>
+
+        <SettingRow
+          label={t('appearance.showChildSessions')}
+          description={t('appearance.showChildSessionsDesc')}
+          onClick={() => layoutStore.setSidebarShowChildSessions(!sidebarShowChildSessions)}
+        >
+          <Toggle
+            enabled={sidebarShowChildSessions}
+            onChange={() => layoutStore.setSidebarShowChildSessions(!sidebarShowChildSessions)}
           />
         </SettingRow>
       </SettingsSection>

@@ -13,6 +13,7 @@ import { useLayoutStore } from '../../../store'
 import { useBusySessions } from '../../../store/activeSessionStore'
 import { useNotifications } from '../../../store/notificationStore'
 import { SessionListItem } from '../../sessions'
+import { SessionChildrenSlot } from './SessionChildrenSlot'
 
 const DIRECTORY_PAGE_SIZE = 5
 
@@ -33,6 +34,9 @@ interface FolderRecentListProps {
   onRenameSession: (session: ApiSession, newTitle: string) => Promise<void>
   onDeleteSession: (session: ApiSession) => Promise<void>
   onReorderProject: (draggedPath: string, targetPath: string) => void
+  expandedChildSessionIds?: Set<string>
+  inlineChildSessions?: Map<string, ApiSession[]>
+  onSelectChildSession?: (session: ApiSession) => void
 }
 
 interface PendingDeleteSession {
@@ -70,6 +74,9 @@ export function FolderRecentList({
   onRenameSession,
   onDeleteSession,
   onReorderProject,
+  expandedChildSessionIds,
+  inlineChildSessions,
+  onSelectChildSession,
 }: FolderRecentListProps) {
   const { t } = useTranslation(['chat', 'common'])
   const isMobile = useIsMobile()
@@ -378,6 +385,9 @@ export function FolderRecentList({
                 onSelectSession={onSelectSession}
                 onRenameSession={onRenameSession}
                 onRequestDeleteSession={setPendingDelete}
+                expandedChildSessionIds={expandedChildSessionIds}
+                inlineChildSessions={inlineChildSessions}
+                onSelectChildSession={onSelectChildSession}
                 // 桌面拖拽
                 draggable={!!project.canReorder && !isMobile}
                 isDragged={activeDragId === project.id}
@@ -434,6 +444,9 @@ interface FolderRecentSectionProps {
   onSelectSession: (session: ApiSession) => void
   onRenameSession: (session: ApiSession, newTitle: string) => Promise<void>
   onRequestDeleteSession: (pending: PendingDeleteSession) => void
+  expandedChildSessionIds?: Set<string>
+  inlineChildSessions?: Map<string, ApiSession[]>
+  onSelectChildSession?: (session: ApiSession) => void
   // 桌面拖拽
   draggable: boolean
   isDragged: boolean
@@ -460,6 +473,9 @@ function FolderRecentSection({
   onSelectSession,
   onRenameSession,
   onRequestDeleteSession,
+  expandedChildSessionIds,
+  inlineChildSessions,
+  onSelectChildSession,
   draggable,
   isDragged,
   dropPosition,
@@ -586,18 +602,29 @@ function FolderRecentSection({
               ) : (
                 <>
                   {sessions.map(session => (
-                    <SessionListItem
-                      key={session.id}
-                      session={session}
-                      isSelected={session.id === selectedSessionId}
-                      onSelect={() => onSelectSession(session)}
-                      onRename={newTitle => handleRename(session.id, newTitle)}
-                      onDelete={() => handleDelete(session.id)}
-                      preferTouchUi={preferTouchUi}
-                      density="minimal"
-                      showStats={showSessionDiffStats}
-                      showDirectory={false}
-                    />
+                    <div key={session.id}>
+                      <SessionListItem
+                        session={session}
+                        isSelected={session.id === selectedSessionId}
+                        onSelect={() => onSelectSession(session)}
+                        onRename={newTitle => handleRename(session.id, newTitle)}
+                        onDelete={() => handleDelete(session.id)}
+                        preferTouchUi={preferTouchUi}
+                        density="minimal"
+                        showStats={showSessionDiffStats}
+                        showDirectory={false}
+                      />
+                      {onSelectChildSession &&
+                        (expandedChildSessionIds?.has(session.id) || inlineChildSessions?.has(session.id)) && (
+                          <SessionChildrenSlot
+                            parentSession={session}
+                            selectedSessionId={selectedSessionId}
+                            fetchAll={expandedChildSessionIds?.has(session.id)}
+                            children={inlineChildSessions?.get(session.id)}
+                            onSelect={onSelectChildSession}
+                          />
+                        )}
+                    </div>
                   ))}
 
                   {hasMore && (

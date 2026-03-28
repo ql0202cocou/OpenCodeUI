@@ -136,7 +136,9 @@
     "folderStyleRecents": "Folder-Style Recents",
     "folderStyleRecentsDesc": "Group recent chats by project folder while keeping the default list available",
     "folderStyleRecentsShowDiff": "Show Diff In Folder View",
-    "folderStyleRecentsShowDiffDesc": "Show additions, deletions, and file counts for sessions in folder-style recents"
+    "folderStyleRecentsShowDiffDesc": "Show additions, deletions, and file counts for sessions in folder-style recents",
+    "showChildSessions": "Always Show Child Sessions",
+    "showChildSessionsDesc": "Always list child sessions under their parent. When off, only active or selected children are shown."
   },
   "notifications": {
     "systemNotifications": "System Notifications",
