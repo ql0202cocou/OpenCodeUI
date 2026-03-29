@@ -212,7 +212,7 @@ export function CommandPalette({ isOpen, onClose, commands }: CommandPaletteProp
       }}
     >
       <div
-        className="w-full max-w-[560px] glass border border-border-200/60 rounded-xl shadow-2xl overflow-hidden flex flex-col"
+        className="w-full max-w-[560px] glass border border-border-200/60 rounded-xl shadow-lg overflow-hidden flex flex-col"
         style={{
           maxHeight: '60vh',
           opacity: isVisible ? 1 : 0,

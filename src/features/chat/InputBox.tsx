@@ -968,7 +968,7 @@ function InputBoxComponent({
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
-                  className={`glass rounded-2xl relative transition-all focus-within:outline-none shadow-lg shadow-black/[0.08] ${
+                  className={`glass rounded-2xl relative transition-all focus-within:outline-none shadow-lg ${
                     isDragging
                       ? 'border border-accent-main-100 ring-2 ring-accent-main-100/30'
                       : isStreaming

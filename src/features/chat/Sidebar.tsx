@@ -237,7 +237,7 @@ export const Sidebar = memo(function Sidebar({
           onTouchEnd={handleSidebarTouchEnd}
           className={`
             fixed left-0 z-40
-            flex flex-col bg-bg-100 shadow-xl
+            flex flex-col bg-bg-100 shadow-lg
             ${isSwipingActive ? '' : 'transition-transform duration-300 ease-out'}
             ${isOpen ? 'translate-x-0' : '-translate-x-full'}
           `}

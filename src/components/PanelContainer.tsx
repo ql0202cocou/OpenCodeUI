@@ -295,7 +295,7 @@ export const PanelContainer = memo(function PanelContainer({
         createPortal(
           <div
             ref={contextMenuRef}
-            className="fixed z-[9999] bg-bg-100 border border-border-200 rounded-lg shadow-xl p-1 min-w-[160px]"
+            className="fixed z-[9999] bg-bg-100 border border-border-200 rounded-lg shadow-lg p-1 min-w-[160px]"
             style={{ left: contextMenu.x, top: contextMenu.y }}
           >
             <button
@@ -313,7 +313,7 @@ export const PanelContainer = memo(function PanelContainer({
         createPortal(
           <div
             ref={addMenuRef}
-            className="fixed z-[9999] bg-bg-100 border border-border-200 rounded-lg shadow-xl p-1 min-w-[140px]"
+            className="fixed z-[9999] bg-bg-100 border border-border-200 rounded-lg shadow-lg p-1 min-w-[140px]"
             style={{
               top: addMenuPos.y,
               left: addMenuPos.align === 'left' ? addMenuPos.x : undefined,
