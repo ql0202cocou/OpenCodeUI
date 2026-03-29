@@ -161,9 +161,9 @@ const ModelListPanel = memo(function ModelListPanel({
   preferTouchUi,
 }: ModelListPanelProps) {
   return (
-    <div ref={menuRef} onKeyDown={handleKeyDown} className="flex flex-col min-h-0 px-1.5 pt-1.5">
+    <div ref={menuRef} onKeyDown={handleKeyDown} className="flex flex-col min-h-0 pt-1.5">
       {/* 搜索栏 */}
-      <div className="shrink-0 px-0.5 pb-1.5">
+      <div className="shrink-0 px-2 pb-1.5">
         <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-bg-200/40 transition-colors focus-within:bg-bg-200/60">
           <SearchIcon className="w-3.5 h-3.5 text-text-400 flex-shrink-0" />
           <input
@@ -181,15 +181,15 @@ const ModelListPanel = memo(function ModelListPanel({
         </div>
       </div>
 
-      {/* 列表 */}
-      <div ref={listRef} className={`overflow-y-auto custom-scrollbar flex-1 min-h-0 ${maxListHeight}`}>
+      {/* 列表 — 左侧 padding 给内容，右侧留给滚动条不覆盖内容 */}
+      <div ref={listRef} className={`overflow-y-auto custom-scrollbar flex-1 min-h-0 pl-2 pr-1 ${maxListHeight}`}>
         {flatList.length === 0 ? (
           <div className="px-4 py-10 text-center">
             <div className="text-sm text-text-400">{noResultsText}</div>
             <div className="text-xs text-text-500 mt-1">{noResultsHint}</div>
           </div>
         ) : (
-          <div className="px-0.5 pb-1">
+          <div className="pb-1 pr-1">
             {flatList.map((item, index) => {
               if (item.type === 'header') {
                 return (
