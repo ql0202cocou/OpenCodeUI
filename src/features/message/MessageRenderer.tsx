@@ -407,6 +407,7 @@ const AssistantMessageView = memo(function AssistantMessageView({
     .filter((p): p is TextPart => p.type === 'text' && !p.synthetic)
     .map(p => p.text)
     .join('')
+  const hasCopyableText = fullText.trim().length > 0
 
   // 检查消息级别错误
   const messageError = (info as AssistantMessageInfo).error
@@ -503,10 +504,10 @@ const AssistantMessageView = memo(function AssistantMessageView({
         </div>
       )}
 
-      {(onFork || fullText.trim()) && (
+      {hasCopyableText && (
         <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 [@media(any-pointer:coarse)]:opacity-100 transition-opacity">
           <ForkActionButton message={message} onFork={onFork} forkMessageId={forkMessageId} />
-          {fullText.trim() && <CopyButton text={fullText} position="static" />}
+          <CopyButton text={fullText} position="static" />
         </div>
       )}
     </div>

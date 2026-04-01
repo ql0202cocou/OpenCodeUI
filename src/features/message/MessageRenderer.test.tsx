@@ -88,4 +88,23 @@ describe('MessageRenderer assistant fork', () => {
       expect(onFork).toHaveBeenCalledWith(message, 'assistant-2')
     })
   })
+
+  it('hides fork when the assistant message has no copyable text', () => {
+    const onFork = vi.fn()
+    const message = createAssistantMessage()
+    message.parts = [
+      {
+        id: 'text-blank',
+        sessionID: 'session-1',
+        messageID: 'assistant-1',
+        type: 'text',
+        text: '   ',
+      },
+    ]
+
+    render(<MessageRenderer message={message} onFork={onFork} forkMessageId="assistant-2" />)
+
+    expect(screen.queryByRole('button', { name: /fork|分叉/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /copy/i })).toBeNull()
+  })
 })
