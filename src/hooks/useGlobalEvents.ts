@@ -222,7 +222,7 @@ function belongsToCurrentSession(sessionId: string): boolean {
   return false
 }
 
-export function useGlobalEvents(callbacks?: GlobalEventsCallbacks, directories?: string[]) {
+export function useGlobalEvents(callbacks?: GlobalEventsCallbacks, directories?: string[], skip?: boolean) {
   // 使用 ref 保存 callbacks，避免重新订阅 SSE
   const callbacksRef = useRef(callbacks)
   const directoriesRef = useRef<string[] | undefined>(directories)
@@ -234,6 +234,10 @@ export function useGlobalEvents(callbacks?: GlobalEventsCallbacks, directories?:
   }, [callbacks])
 
   useEffect(() => {
+    // 多实例模式（如 ChatPane）跳过 SSE 订阅 — 它们通过 pub/sub consumer 接收事件，
+    // 不需要自己的 subscribeToEvents，否则 messageStore 会被重复写入。
+    if (skip) return
+
     // 节流滚动
     let scrollPending = false
     const pendingScrollSessionIds = new Set<string>()
@@ -531,9 +535,10 @@ export function useGlobalEvents(callbacks?: GlobalEventsCallbacks, directories?:
       }
       unsubscribe()
     }
-  }, []) // 空依赖，只订阅一次
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps -- skip 是实例级常量，mount 时读取一次即可
 
   useEffect(() => {
+    if (skip) return
     directoriesRef.current = directories
     if (initializedDirectoriesRef.current) {
       refreshRef.current?.()

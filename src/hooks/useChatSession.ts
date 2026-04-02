@@ -364,9 +364,13 @@ export function useChatSession({
   }, [sseCallbacks])
 
   // Global Events (SSE)
-  // 单实例模式：直接传 callbacks 走 callbacksRef 路径
-  // 多实例模式：传 undefined（SSE 连接仍共享），通过 consumer 注册接收事件
-  useGlobalEvents(isMultiInstance ? undefined : sseCallbacks, isMultiInstance ? undefined : activeDirectories)
+  // 单实例模式：直接传 callbacks 走 callbacksRef 路径，创建 SSE 订阅
+  // 多实例模式：skip=true 跳过 SSE 订阅（避免 messageStore 重复写入），通过 consumer 注册接收事件
+  useGlobalEvents(
+    isMultiInstance ? undefined : sseCallbacks,
+    isMultiInstance ? undefined : activeDirectories,
+    isMultiInstance, // skip: 多实例模式不创建自己的 SSE 订阅
+  )
 
   // 多实例模式：注册 pub/sub consumer，SSE 事件按 sessionId 分发到此
   useEffect(() => {
