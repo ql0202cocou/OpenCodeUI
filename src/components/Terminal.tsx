@@ -12,6 +12,7 @@ import { getPtyConnectUrl, updatePtySession } from '../api/pty'
 import { layoutStore } from '../store/layoutStore'
 import { useInputCapabilities } from '../hooks/useInputCapabilities'
 import { logger } from '../utils/logger'
+import { isTauri } from '../utils/tauri'
 
 // ============================================
 // 终端主题 - 与应用主题配合
@@ -360,7 +361,13 @@ export const Terminal = memo(function Terminal({ ptyId, directory, isActive }: T
     })
 
     const fitAddon = new FitAddon()
-    const webLinksAddon = new WebLinksAddon()
+    const webLinksAddon = new WebLinksAddon((_event, uri) => {
+      if (isTauri()) {
+        import('@tauri-apps/plugin-opener').then(mod => mod.openUrl(uri)).catch(() => window.open(uri))
+      } else {
+        window.open(uri)
+      }
+    })
 
     terminal.loadAddon(fitAddon)
     terminal.loadAddon(webLinksAddon)
