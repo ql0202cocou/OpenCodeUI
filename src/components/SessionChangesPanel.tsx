@@ -518,9 +518,9 @@ export const SessionChangesPanel = memo(function SessionChangesPanel({
               align="right"
               minWidth="170px"
               maxWidth="min(220px, calc(100vw - 24px))"
-              className="!p-1"
+              className="!rounded-lg !p-1"
             >
-              <div ref={changeMenuRef} role="menu" aria-label={t('sessionChanges.mode')} className="space-y-0.5">
+              <div ref={changeMenuRef} role="menu" aria-label={t('sessionChanges.mode')} className="space-y-px">
                 {changeOptions.map(mode => {
                   const meta = changeModeMeta[mode]
                   const isSelected = mode === changeMode
@@ -537,7 +537,7 @@ export const SessionChangesPanel = memo(function SessionChangesPanel({
                         setChangeMenuOpen(false)
                       }}
                       className={`
-                        group flex w-full items-center rounded-md px-2 py-1.5 text-left text-xs transition-colors
+                        group flex w-full items-center rounded-md px-2.5 py-1.5 text-left text-xs transition-colors
                         ${
                           isSelected
                             ? 'bg-bg-200/70 text-text-100 font-medium'
