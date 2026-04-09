@@ -69,13 +69,17 @@ export interface FileStatusItem {
 
 /**
  * 文件差异
+ * v1.4.0+ 使用 patch 格式，旧版使用 before/after
+ * 组件层统一优先 patch，回退 before/after
  */
 export interface FileDiff {
   file: string
-  before: string
-  after: string
+  patch?: string
+  before?: string
+  after?: string
   additions: number
   deletions: number
+  status?: 'added' | 'deleted' | 'modified'
 }
 
 /**

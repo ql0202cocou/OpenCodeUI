@@ -2,7 +2,7 @@
 // LSP API - Language Server Protocol 状态
 // ============================================
 
-import { get } from './http'
+import { getSDKClient, unwrap } from './sdk'
 import { formatPathForApi } from '../utils/directoryUtils'
 
 export interface LSPStatus {
@@ -15,7 +15,17 @@ export interface LSPStatus {
  * 获取 LSP 服务状态
  */
 export async function getLspStatus(directory?: string): Promise<LSPStatus> {
-  return get<LSPStatus>('/lsp', { directory: formatPathForApi(directory) })
+  const sdk = getSDKClient()
+  const result = unwrap(await sdk.lsp.status({ directory: formatPathForApi(directory) }))
+  // SDK 返回 LspStatus[]（id/name/root/status），转换为 UI 层期望的格式
+  if (Array.isArray(result) && result.length > 0) {
+    const first = result[0] as Record<string, unknown>
+    return {
+      running: first.status === 'connected',
+      language: first.name as string | undefined,
+    }
+  }
+  return { running: false }
 }
 
 export interface FormatterStatus {
@@ -27,5 +37,15 @@ export interface FormatterStatus {
  * 获取格式化器状态
  */
 export async function getFormatterStatus(directory?: string): Promise<FormatterStatus> {
-  return get<FormatterStatus>('/formatter', { directory: formatPathForApi(directory) })
+  const sdk = getSDKClient()
+  const result = unwrap(await sdk.formatter.status({ directory: formatPathForApi(directory) }))
+  // SDK 返回 FormatterStatus[]（name/extensions/enabled），转换为 UI 层期望的格式
+  if (Array.isArray(result) && result.length > 0) {
+    const first = result[0] as Record<string, unknown>
+    return {
+      available: first.enabled === true,
+      name: first.name as string | undefined,
+    }
+  }
+  return { available: false }
 }

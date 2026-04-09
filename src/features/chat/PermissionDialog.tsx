@@ -39,11 +39,16 @@ export function PermissionDialog({
   // Extract structured filediff if available
   let before: string | undefined
   let after: string | undefined
+  let patchDiff: string | undefined
 
   if (metadata?.filediff && typeof metadata.filediff === 'object') {
     const fd = metadata.filediff as Record<string, unknown>
-    before = String(fd.before || '')
-    after = String(fd.after || '')
+    // 上游 v1.4.0+ 优先 patch 格式
+    if (typeof fd.patch === 'string') {
+      patchDiff = fd.patch
+    }
+    before = fd.before !== undefined ? String(fd.before) : undefined
+    after = fd.after !== undefined ? String(fd.after) : undefined
   }
 
   // 判断是否是文件编辑类权限

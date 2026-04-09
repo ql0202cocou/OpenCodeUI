@@ -1,9 +1,9 @@
 // ============================================
 // Message API Functions
-// 基于 OpenAPI: /session/{sessionID}/message 相关接口
+// 基于 @opencode-ai/sdk: /session/{sessionID}/message 相关接口
 // ============================================
 
-import { get, post } from './http'
+import { getSDKClient, unwrap } from './sdk'
 import { formatPathForApi } from '../utils/directoryUtils'
 import type {
   ApiMessageWithParts,
@@ -21,17 +21,21 @@ import type {
 // ============================================
 
 /**
- * GET /session/{sessionID}/message - 获取 session 的消息列表
+ * 获取 session 的消息列表
  */
 export async function getSessionMessages(
   sessionId: string,
   limit?: number,
   directory?: string,
 ): Promise<ApiMessageWithParts[]> {
-  return get<ApiMessageWithParts[]>(`/session/${sessionId}/message`, {
-    directory: formatPathForApi(directory),
-    limit,
-  })
+  const sdk = getSDKClient()
+  return unwrap(
+    await sdk.session.messages({
+      sessionID: sessionId,
+      directory: formatPathForApi(directory),
+      limit,
+    }),
+  ) as ApiMessageWithParts[]
 }
 
 /**
@@ -126,13 +130,9 @@ function toFileUrl(path: string): string {
 }
 
 /**
- * 构建发送消息的请求体（供 sync/async 共用）
+ * 构建 SDK 发送消息所需的参数
  */
-function buildSendMessageBody(params: SendMessageParams): {
-  path: string
-  query: Record<string, string | undefined>
-  body: Record<string, unknown>
-} {
+function buildPromptParams(params: SendMessageParams) {
   const { sessionId, text, attachments, model, agent, variant, directory } = params
 
   const parts: Array<{ type: string; [key: string]: unknown }> = []
@@ -184,39 +184,28 @@ function buildSendMessageBody(params: SendMessageParams): {
     }
   }
 
-  const requestBody: Record<string, unknown> = {
-    parts,
-    model,
-  }
-
-  if (agent) {
-    requestBody.agent = agent
-  }
-
-  if (variant) {
-    requestBody.variant = variant
-  }
-
   return {
-    path: `/session/${sessionId}`,
-    query: { directory: formatPathForApi(directory) },
-    body: requestBody,
+    sessionID: sessionId,
+    directory: formatPathForApi(directory),
+    parts: parts as Parameters<ReturnType<typeof getSDKClient>['session']['promptAsync']>[0]['parts'],
+    model,
+    agent,
+    variant,
   }
 }
 
 /**
- * POST /session/{sessionID}/message - 同步发送消息（等待完成）
+ * 同步发送消息（等待完成）
  */
 export async function sendMessage(params: SendMessageParams): Promise<SendMessageResponse> {
-  const { path, query, body } = buildSendMessageBody(params)
-  return post<SendMessageResponse>(`${path}/message`, query, body)
+  const sdk = getSDKClient()
+  return unwrap(await sdk.session.prompt(buildPromptParams(params))) as SendMessageResponse
 }
 
 /**
- * POST /session/{sessionID}/prompt_async - 异步发送消息
- * 立即返回 204，AI 响应通过 SSE 事件流推送
+ * 异步发送消息 — 立即返回，AI 响应通过 SSE 推送
  */
 export async function sendMessageAsync(params: SendMessageParams): Promise<void> {
-  const { path, query, body } = buildSendMessageBody(params)
-  await post<void>(`${path}/prompt_async`, query, body)
+  const sdk = getSDKClient()
+  await sdk.session.promptAsync(buildPromptParams(params))
 }
