@@ -12,7 +12,7 @@ import { getPtyConnectUrl, updatePtySession } from '../api/pty'
 import { layoutStore } from '../store/layoutStore'
 import { useInputCapabilities } from '../hooks/useInputCapabilities'
 import { logger } from '../utils/logger'
-import { isTauri } from '../utils/tauri'
+import { isTauri, isTauriMobile } from '../utils/tauri'
 
 // ============================================
 // 终端主题 - 与应用主题配合
@@ -283,7 +283,8 @@ export const Terminal = memo(function Terminal({ ptyId, directory, isActive }: T
   const terminalRef = useRef<XTerm | null>(null)
   const fitAddonRef = useRef<FitAddon | null>(null)
   const stickyModifiersRef = useRef<StickyModifiers>(createStickyModifiers())
-  const wsRef = useRef<WebSocket | null>(null)
+  const transportSendRef = useRef<((data: string) => void) | null>(null)
+  const transportDisconnectRef = useRef<(() => void) | null>(null)
   const resizeTimeoutRef = useRef<number | null>(null)
   const mountedRef = useRef(true)
   const isPanelResizingRef = useRef(false)
@@ -314,9 +315,7 @@ export const Terminal = memo(function Terminal({ ptyId, directory, isActive }: T
       const sticky = stickyModifiersRef.current
       const outgoing = applyStickyModifiers(data, sticky)
 
-      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-        wsRef.current.send(outgoing)
-      }
+      transportSendRef.current?.(outgoing)
 
       if (hasStickyModifier(sticky)) {
         clearStickyModifiers()
@@ -410,58 +409,113 @@ export const Terminal = memo(function Terminal({ ptyId, directory, isActive }: T
     const MAX_RECONNECT_DELAY = 30000 // 最大 30s
     const BASE_RECONNECT_DELAY = 1000 // 起始 1s
     let intentionalClose = false // 标记主动关闭
+    const useNativePtyBridge = isTauriMobile()
 
-    const connectWs = () => {
+    const resetTransport = () => {
+      transportSendRef.current = null
+      transportDisconnectRef.current = null
+    }
+
+    const handleConnected = () => {
+      logger.log(useNativePtyBridge ? '[Terminal/Tauri] Connected:' : '[Terminal] WebSocket connected:', ptyId)
+      if (!mountedRef.current) return
+      reconnectAttempt = 0
+      layoutStore.updateTerminalTab(ptyId, { status: 'connected' })
+      const { cols, rows } = terminal
+      logger.log('[Terminal] Sending size:', cols, 'x', rows)
+      updatePtySession(ptyId, { size: { cols, rows } }, directory).catch(() => {})
+    }
+
+    const handleDisconnected = ({ code, reason }: { code?: number; reason?: string }) => {
+      logger.log(
+        useNativePtyBridge ? '[Terminal/Tauri] Disconnected:' : '[Terminal] WebSocket closed:',
+        ptyId,
+        code,
+        reason,
+      )
+      resetTransport()
+      if (!mountedRef.current) return
+      layoutStore.updateTerminalTab(ptyId, { status: 'disconnected' })
+
+      if (intentionalClose || code === 1000) {
+        terminal.write('\r\n\x1b[90m[Connection closed]\x1b[0m\r\n')
+        return
+      }
+
+      reconnectAttempt++
+      const delay = Math.min(BASE_RECONNECT_DELAY * Math.pow(2, reconnectAttempt - 1), MAX_RECONNECT_DELAY)
+      terminal.write(`\r\n\x1b[90m[Disconnected, reconnecting in ${(delay / 1000).toFixed(0)}s...]\x1b[0m\r\n`)
+      reconnectTimer = window.setTimeout(() => {
+        reconnectTimer = null
+        if (mountedRef.current) {
+          connectTransport()
+        }
+      }, delay)
+    }
+
+    const connectTransport = () => {
       if (!mountedRef.current) return
 
       fitAddon.fit()
 
-      const wsUrl = getPtyConnectUrl(ptyId, directory)
-      logger.log('[Terminal] Connecting to:', wsUrl, reconnectAttempt > 0 ? `(reconnect #${reconnectAttempt})` : '')
-      ws = new WebSocket(wsUrl)
-      wsRef.current = ws
+      if (useNativePtyBridge) {
+        logger.log('[Terminal/Tauri] Connecting PTY bridge:', ptyId, reconnectAttempt > 0 ? `(reconnect #${reconnectAttempt})` : '')
+        void import('../api/ptyBridge')
+          .then(({ connectTauriPty }) =>
+            connectTauriPty({
+              ptyId,
+              directory,
+              onConnected: handleConnected,
+              onMessage: chunk => {
+                if (!mountedRef.current) return
+                terminal.write(chunk)
+              },
+              onDisconnected: handleDisconnected,
+              onError: message => {
+                logger.log('[Terminal/Tauri] PTY bridge error:', ptyId, message)
+              },
+            }),
+          )
+          .then(connection => {
+            if (!connection) return
+            if (!mountedRef.current) {
+              connection.close()
+              return
+            }
+            transportSendRef.current = data => connection.send(data)
+            transportDisconnectRef.current = () => connection.close()
+          })
+          .catch(error => {
+            const message = error instanceof Error ? error.message : String(error)
+            logger.log('[Terminal/Tauri] Failed to initialize PTY bridge:', ptyId, message)
+            handleDisconnected({ reason: message })
+          })
+      } else {
+        const wsUrl = getPtyConnectUrl(ptyId, directory)
+        logger.log('[Terminal] Connecting to:', wsUrl, reconnectAttempt > 0 ? `(reconnect #${reconnectAttempt})` : '')
+        ws = new WebSocket(wsUrl)
+        transportSendRef.current = data => {
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(data)
+          }
+        }
+        transportDisconnectRef.current = () => ws?.close()
 
-      ws.onopen = () => {
-        logger.log('[Terminal] WebSocket connected:', ptyId)
-        if (!mountedRef.current) return
-        reconnectAttempt = 0 // 重置重连计数
-        layoutStore.updateTerminalTab(ptyId, { status: 'connected' })
-        const { cols, rows } = terminal
-        logger.log('[Terminal] Sending size:', cols, 'x', rows)
-        updatePtySession(ptyId, { size: { cols, rows } }, directory).catch(() => {})
-      }
+        ws.onopen = handleConnected
 
-      ws.onmessage = event => {
-        if (!mountedRef.current) return
-        terminal.write(event.data)
-      }
-
-      ws.onclose = e => {
-        logger.log('[Terminal] WebSocket closed:', ptyId, e.code, e.reason)
-        if (!mountedRef.current) return
-        layoutStore.updateTerminalTab(ptyId, { status: 'disconnected' })
-
-        // 主动关闭或正常关闭（1000）不重连
-        if (intentionalClose || e.code === 1000) {
-          terminal.write('\r\n\x1b[90m[Connection closed]\x1b[0m\r\n')
-          return
+        ws.onmessage = event => {
+          if (!mountedRef.current) return
+          terminal.write(event.data)
         }
 
-        // 自动重连
-        reconnectAttempt++
-        const delay = Math.min(BASE_RECONNECT_DELAY * Math.pow(2, reconnectAttempt - 1), MAX_RECONNECT_DELAY)
-        terminal.write(`\r\n\x1b[90m[Disconnected, reconnecting in ${(delay / 1000).toFixed(0)}s...]\x1b[0m\r\n`)
-        reconnectTimer = window.setTimeout(() => {
-          reconnectTimer = null
-          if (mountedRef.current) {
-            connectWs()
-          }
-        }, delay)
-      }
+        ws.onclose = e => {
+          handleDisconnected({ code: e.code, reason: e.reason })
+        }
 
-      ws.onerror = e => {
-        logger.log('[Terminal] WebSocket error:', ptyId, e)
-        // onclose 会在 onerror 之后触发，重连逻辑交给 onclose
+        ws.onerror = e => {
+          logger.log('[Terminal] WebSocket error:', ptyId, e)
+          // onclose 会在 onerror 之后触发，重连逻辑交给 onclose
+        }
       }
 
       disposeData?.dispose()
@@ -470,7 +524,7 @@ export const Terminal = memo(function Terminal({ ptyId, directory, isActive }: T
       })
     }
 
-    wsConnectTimeout = requestAnimationFrame(connectWs) as unknown as number
+    wsConnectTimeout = requestAnimationFrame(connectTransport) as unknown as number
 
     disposeTitle = terminal.onTitleChange(title => {
       if (!mountedRef.current) return
@@ -491,14 +545,11 @@ export const Terminal = memo(function Terminal({ ptyId, directory, isActive }: T
         clearTimeout(resizeTimeoutRef.current)
         resizeTimeoutRef.current = null
       }
-      if (ws) {
-        ws.close()
-      }
+      transportDisconnectRef.current?.()
       disposeData?.dispose()
       disposeTitle?.dispose()
       textarea?.removeEventListener('blur', handleTextareaBlur)
-      // 置空 refs 防止内存泄漏
-      wsRef.current = null
+      resetTransport()
       // 显式 dispose addons
       fitAddon.dispose()
       webLinksAddon.dispose()

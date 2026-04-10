@@ -5,9 +5,11 @@
 mod commands;
 #[cfg(not(target_os = "android"))]
 mod dir_state;
+mod pty;
 mod service;
 mod sse;
 
+use pty::PtyState;
 use sse::SseState;
 use std::sync::atomic::{AtomicU64, Ordering};
 use tauri::Manager;
@@ -64,7 +66,9 @@ fn create_new_window(app: &tauri::AppHandle, directory: Option<String>) {
 }
 
 pub fn run() {
-    let builder = tauri::Builder::default().manage(SseState::default());
+    let builder = tauri::Builder::default()
+        .manage(SseState::default())
+        .manage(PtyState::default());
 
     // Desktop: 注册 OpenDirectoryState + single-instance 插件（需在 setup 之前）
     #[cfg(not(target_os = "android"))]
@@ -137,11 +141,16 @@ pub fn run() {
                     // 窗口销毁时清理该窗口的 SSE 连接
                     let state = window.state::<SseState>();
                     state.active().pin().remove(window.label());
+                    let pty_state = window.state::<PtyState>();
+                    pty_state.disconnect_window(window.label());
                 }
                 _ => {}
             }
         })
         .invoke_handler(tauri::generate_handler![
+            commands::pty::pty_connect,
+            commands::pty::pty_send,
+            commands::pty::pty_disconnect,
             commands::sse::sse_connect,
             commands::sse::sse_disconnect,
             commands::utils::get_cli_directory,
@@ -152,9 +161,12 @@ pub fn run() {
             commands::opencode::confirm_close_app,
         ]);
 
-    // Android: 只注册 SSE commands
+    // Android: 注册 SSE + PTY bridge commands
     #[cfg(target_os = "android")]
     let builder = builder.invoke_handler(tauri::generate_handler![
+        commands::pty::pty_connect,
+        commands::pty::pty_send,
+        commands::pty::pty_disconnect,
         commands::sse::sse_connect,
         commands::sse::sse_disconnect,
     ]);

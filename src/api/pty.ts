@@ -8,12 +8,25 @@ import { formatPathForApi } from '../utils/directoryUtils'
 import { serverStore } from '../store/serverStore'
 import type { Pty, PtyCreateParams, PtyUpdateParams } from '../types/api/pty'
 
+type LegacyPty = Pty & { running?: boolean; status?: Pty['status'] }
+interface PtyConnectUrlOptions {
+  includeAuthInUrl?: boolean
+}
+
+function normalizePty(pty: LegacyPty): Pty {
+  if (pty.status) return pty as Pty
+  return {
+    ...pty,
+    status: pty.running ? 'running' : 'exited',
+  } as Pty
+}
+
 /**
  * 获取所有 PTY 会话列表
  */
 export async function listPtySessions(directory?: string): Promise<Pty[]> {
   const sdk = getSDKClient()
-  return unwrap(await sdk.pty.list({ directory: formatPathForApi(directory) }))
+  return unwrap(await sdk.pty.list({ directory: formatPathForApi(directory) })).map(pty => normalizePty(pty as LegacyPty))
 }
 
 /**
@@ -21,7 +34,7 @@ export async function listPtySessions(directory?: string): Promise<Pty[]> {
  */
 export async function createPtySession(params: PtyCreateParams, directory?: string): Promise<Pty> {
   const sdk = getSDKClient()
-  return unwrap(await sdk.pty.create({ directory: formatPathForApi(directory), ...params }))
+  return normalizePty(unwrap(await sdk.pty.create({ directory: formatPathForApi(directory), ...params })) as LegacyPty)
 }
 
 /**
@@ -29,7 +42,7 @@ export async function createPtySession(params: PtyCreateParams, directory?: stri
  */
 export async function getPtySession(ptyId: string, directory?: string): Promise<Pty> {
   const sdk = getSDKClient()
-  return unwrap(await sdk.pty.get({ ptyID: ptyId, directory: formatPathForApi(directory) }))
+  return normalizePty(unwrap(await sdk.pty.get({ ptyID: ptyId, directory: formatPathForApi(directory) })) as LegacyPty)
 }
 
 /**
@@ -37,7 +50,9 @@ export async function getPtySession(ptyId: string, directory?: string): Promise<
  */
 export async function updatePtySession(ptyId: string, params: PtyUpdateParams, directory?: string): Promise<Pty> {
   const sdk = getSDKClient()
-  return unwrap(await sdk.pty.update({ ptyID: ptyId, directory: formatPathForApi(directory), ...params }))
+  return normalizePty(
+    unwrap(await sdk.pty.update({ ptyID: ptyId, directory: formatPathForApi(directory), ...params })) as LegacyPty,
+  )
 }
 
 /**
@@ -55,13 +70,14 @@ export async function removePtySession(ptyId: string, directory?: string): Promi
  * WebSocket 不支持自定义 header，认证通过 URL userinfo 传递
  * 这部分必须手动拼，SDK 不处理 WebSocket
  */
-export function getPtyConnectUrl(ptyId: string, directory?: string): string {
+export function getPtyConnectUrl(ptyId: string, directory?: string, options?: PtyConnectUrlOptions): string {
   const httpBase = getApiBaseUrl()
   const wsBase = httpBase.replace(/^http/, 'ws')
+  const includeAuthInUrl = options?.includeAuthInUrl ?? true
 
   const auth = serverStore.getActiveAuth()
   let wsUrl: string
-  if (auth?.password) {
+  if (includeAuthInUrl && auth?.password) {
     const creds = `${encodeURIComponent(auth.username)}:${encodeURIComponent(auth.password)}@`
     wsUrl = wsBase.replace('://', `://${creds}`)
   } else {
