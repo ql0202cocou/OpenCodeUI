@@ -510,7 +510,10 @@ export function SidePanel({
     return map
   }, [folderProjects])
 
-  const currentProjectWorkspaceDirectories = currentProject.workspaceDirectories ?? []
+  const currentProjectWorkspaceDirectories = useMemo(
+    () => currentProject.workspaceDirectories ?? [],
+    [currentProject.workspaceDirectories],
+  )
   const shouldRenderWorkspaceTreeOnly =
     !search && currentProjectWorkspaceDirectories.length > 1 && currentProject.id !== 'global'
   const shouldWaitForWorkspaceResolution =
@@ -624,7 +627,7 @@ export function SidePanel({
   )
 
   const renderActiveSessionNode = useCallback(
-    (entry: (typeof busySessions)[number], level = 0): ReactNode => {
+    function renderActiveSessionNode(entry: (typeof busySessions)[number], level = 0): ReactNode {
       const resolvedSession = sessionLookup.get(entry.sessionId)
       const childEntries = activeSessionTree.childrenByParent.get(entry.sessionId) ?? []
 

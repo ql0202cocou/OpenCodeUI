@@ -296,7 +296,7 @@ export const SessionChangesPanel = memo(function SessionChangesPanel({
     if (changeOptions.length === 0) return
     if (changeOptions.includes(changeMode)) return
     setChangeMode(preferredChangeMode)
-  }, [changeMode, changeOptions, preferredChangeMode])
+  }, [changeMode, changeOptions, preferredChangeMode, setChangeMode])
 
   useEffect(() => {
     if (!project?.vcs) return

@@ -905,7 +905,7 @@ export function useChatSession({
       await animateUndo(messageIdsToRemove)
       await handleUndo(userMessageId)
     },
-    [messages, animateUndo, handleUndo], // eslint-disable-line react-hooks/exhaustive-deps -- chatAreaRef is a stable ref
+    [messages, animateUndo, handleUndo],
   )
 
   // Redo with animation

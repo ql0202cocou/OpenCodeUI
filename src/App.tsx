@@ -187,6 +187,7 @@ function App() {
       paneLayout.paneCount,
       paneLayout.isSplit,
       paneLayout.fullscreenPaneId,
+      chatViewport.interaction.sidebarBehavior,
       splitPaneEnabled,
       handleOpenSidebar,
       handleEnterSplitMode,
