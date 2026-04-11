@@ -41,21 +41,6 @@ export function getHighlighter(): Promise<HighlighterCore> {
 const loadingLangs = new Map<string, Promise<void>>()
 
 /**
- * 把别名解析到 base id。
- * 例如 'js' → 'javascript', 'py' → 'python'
- */
-function resolveAlias(lang: string): string | undefined {
-  if (lang in bundledLanguagesBase) return lang
-  if (lang in bundledLanguagesAlias) {
-    // alias 指向的 loader 和 base 共享同一个 id，
-    // 但我们需要 base id 来查 loader
-    // shiki/langs 的 alias 值本身就是 dynamic import 函数
-    return lang // alias 也可以直接用
-  }
-  return undefined
-}
-
-/**
  * 确保某个语言已经加载到 highlighter 中。
  * 已加载的语言会被跳过，不会重复请求。
  */
