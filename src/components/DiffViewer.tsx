@@ -21,9 +21,9 @@ import type { DiffStyle } from '../store/themeStore'
 // 常量
 // ============================================
 
-/** codeFontScale 偏移 → 代码行高 (px)。基准 20px，每 1px 字号偏移对应 2px 行高增量 */
+/** codeFontScale 偏移 → 代码行高 (px)。基准 24px，每 1px 字号偏移对应 2px 行高增量 */
 function codeLineHeight(offset: number): number {
-  return 20 + offset * 2
+  return 24 + offset * 2
 }
 const OVERSCAN = 5
 
@@ -355,7 +355,9 @@ const WrappedSplitDiffView = memo(function WrappedSplitDiffView({
 
   if (pairedLines.length === 0) {
     return (
-      <div className="h-full flex items-center justify-center text-text-400 text-[length:var(--fs-base)]">{t('diffViewer.noChanges')}</div>
+      <div className="h-full flex items-center justify-center text-text-400 text-[length:var(--fs-base)]">
+        {t('diffViewer.noChanges')}
+      </div>
     )
   }
 
@@ -641,7 +643,9 @@ const SplitDiffView = memo(function SplitDiffView({
 
   if (pairedLines.length === 0) {
     return (
-      <div className="h-full flex items-center justify-center text-text-400 text-[length:var(--fs-base)]">{t('diffViewer.noChanges')}</div>
+      <div className="h-full flex items-center justify-center text-text-400 text-[length:var(--fs-base)]">
+        {t('diffViewer.noChanges')}
+      </div>
     )
   }
 
@@ -979,7 +983,9 @@ const UnifiedDiffView = memo(function UnifiedDiffView({
 
   if (lines.length === 0) {
     return (
-      <div className="h-full flex items-center justify-center text-text-400 text-[length:var(--fs-base)]">{t('diffViewer.noChanges')}</div>
+      <div className="h-full flex items-center justify-center text-text-400 text-[length:var(--fs-base)]">
+        {t('diffViewer.noChanges')}
+      </div>
     )
   }
 
@@ -1145,7 +1151,9 @@ const WrappedUnifiedDiffView = memo(function WrappedUnifiedDiffView({
 
   if (lines.length === 0) {
     return (
-      <div className="h-full flex items-center justify-center text-text-400 text-[length:var(--fs-base)]">{t('diffViewer.noChanges')}</div>
+      <div className="h-full flex items-center justify-center text-text-400 text-[length:var(--fs-base)]">
+        {t('diffViewer.noChanges')}
+      </div>
     )
   }
 

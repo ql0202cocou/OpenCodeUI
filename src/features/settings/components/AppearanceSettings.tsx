@@ -488,9 +488,21 @@ export function AppearanceSettings() {
 
         <div>
           <p className="text-[length:var(--fs-md)] text-text-100 mb-2">{t('appearance.codeFontScale')}</p>
-          <FontScaleSlider value={codeFontScale} onChange={setCodeFontScale} baseSize={11} />
+          <FontScaleSlider value={codeFontScale} onChange={setCodeFontScale} baseSize={13} />
           <p className="text-[length:var(--fs-xs)] text-text-500 mt-1">{t('appearance.codeFontScaleDesc')}</p>
         </div>
+
+        {(uiFontScale !== 0 || codeFontScale !== 0) && (
+          <button
+            onClick={() => {
+              setUIFontScale(0)
+              setCodeFontScale(0)
+            }}
+            className="text-[length:var(--fs-sm)] text-accent-main-100 hover:text-accent-main-200 transition-colors px-2 py-1 rounded hover:bg-bg-200/50 self-start"
+          >
+            {t('appearance.fontScaleReset')}
+          </button>
+        )}
 
         <SettingRow label={t('appearance.language')} description={t('appearance.languageDesc')}>
           <select

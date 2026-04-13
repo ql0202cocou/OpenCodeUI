@@ -3,9 +3,9 @@ import { useSyntaxHighlightRef } from '../hooks/useSyntaxHighlight'
 import { useDynamicVirtualScroll } from '../hooks/useDynamicVirtualScroll'
 import { themeStore } from '../store/themeStore'
 
-/** codeFontScale 偏移 → 代码行高 (px)。基准 20px，每 1px 字号偏移对应 2px 行高增量 */
+/** codeFontScale 偏移 → 代码行高 (px)。基准 24px，每 1px 字号偏移对应 2px 行高增量 */
 function codeLineHeight(offset: number): number {
-  return 20 + offset * 2
+  return 24 + offset * 2
 }
 
 const OVERSCAN = 5

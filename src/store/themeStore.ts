@@ -600,8 +600,9 @@ class ThemeStore {
    * 非零时通过 :root:root 高优先级覆盖 --fs-* 变量。
    *
    * 基准值（偏移 0）：
-   *   UI:   xxs=10  xs=11  sm=12  md=13  base=14  lg=16
-   *   Code: code=11  code-line-height=20  terminal=13  terminal-line-height=1.2
+   *   UI:   xxs=11  xs=12  sm=13  md=13  base=14  lg=16
+   *         heading-3=16  heading-2=18  heading-1=20
+   *   Code: code=13  code-line-height=24  terminal=13  terminal-line-height=1.4
    */
   private applyFontScale() {
     const { uiFontScale: ui, codeFontScale: code } = this.state
@@ -622,9 +623,9 @@ class ThemeStore {
 
     if (ui !== 0) {
       vars.push(
-        `--fs-xxs: ${10 + ui}px`,
-        `--fs-xs: ${11 + ui}px`,
-        `--fs-sm: ${12 + ui}px`,
+        `--fs-xxs: ${11 + ui}px`,
+        `--fs-xs: ${12 + ui}px`,
+        `--fs-sm: ${13 + ui}px`,
         `--fs-md: ${13 + ui}px`,
         `--fs-base: ${14 + ui}px`,
         `--fs-lg: ${16 + ui}px`,
@@ -635,11 +636,11 @@ class ThemeStore {
     }
 
     if (code !== 0) {
-      const codePx = 11 + code
-      // 行高 = 基准 20 + 偏移 * 2（每 1px 字号对应 2px 行高增量）
-      const lineH = 20 + code * 2
+      const codePx = 13 + code
+      // 行高 = 基准 24 + 偏移 * 2（每 1px 字号对应 2px 行高增量）
+      const lineH = 24 + code * 2
       const termPx = 13 + code
-      const termLH = Math.round((1.2 + code * 0.05) * 100) / 100
+      const termLH = Math.round((1.4 + code * 0.05) * 100) / 100
       vars.push(
         `--fs-code: ${codePx}px`,
         `--fs-code-line-height: ${lineH}px`,

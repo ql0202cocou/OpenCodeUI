@@ -133,6 +133,7 @@
     "uiFontScaleDesc": "Adjust the font size for menus, labels, and other UI elements",
     "codeFontScale": "Code Font Size",
     "codeFontScaleDesc": "Adjust the font size for code blocks, diffs, and terminal",
+    "fontScaleReset": "Reset to default",
     "codeWordWrap": "Code Word Wrap",
     "codeWordWrapDesc": "Wrap code blocks and diffs to the available width to reduce horizontal scrolling",
     "wakeLock": "Keep Screen Awake",

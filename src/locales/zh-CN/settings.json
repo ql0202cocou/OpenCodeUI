@@ -133,6 +133,7 @@
     "uiFontScaleDesc": "调整菜单、标签等 UI 元素的字体大小",
     "codeFontScale": "代码字号",
     "codeFontScaleDesc": "调整代码块、差异对比和终端的字体大小",
+    "fontScaleReset": "恢复默认",
     "codeWordWrap": "代码自动换行",
     "codeWordWrapDesc": "让代码块和 diff 在可用宽度内自动换行，减少横向滚动",
     "wakeLock": "保持屏幕常亮",
