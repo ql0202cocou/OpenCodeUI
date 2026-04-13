@@ -61,6 +61,8 @@ export interface StepFinishDisplay {
   cost: boolean
   duration: boolean
   turnDuration: boolean
+  agent: boolean
+  model: boolean
 }
 
 export type ReasoningDisplayMode = 'capsule' | 'italic' | 'markdown'
@@ -86,6 +88,8 @@ const DEFAULT_STEP_FINISH_DISPLAY: StepFinishDisplay = {
   cost: true,
   duration: true,
   turnDuration: true,
+  agent: false,
+  model: false,
 }
 
 const DEFAULT_REASONING_DISPLAY_MODE: ReasoningDisplayMode = 'capsule'

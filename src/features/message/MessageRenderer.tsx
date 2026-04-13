@@ -422,6 +422,12 @@ const AssistantMessageView = memo(function AssistantMessageView({
   // 消息总耗时
   const { created, completed } = info.time
   const duration = completed != null ? completed - created : undefined
+
+  // agent / model（仅 assistant 消息）
+  const assistantInfo = info.role === 'assistant' ? (info as AssistantMessageInfo) : null
+  const agent = assistantInfo?.agent || undefined
+  const modelLabel = assistantInfo?.modelID || undefined
+
   const hasStepFinishPart = parts.some(part => part.type === 'step-finish')
   const showTurnDurationFooter =
     !isStreaming && !hasStepFinishPart && stepFinishDisplay.turnDuration && turnDuration != null && turnDuration > 0
@@ -462,6 +468,8 @@ const AssistantMessageView = memo(function AssistantMessageView({
                   duration={isLastStepFinish ? duration : undefined}
                   turnDuration={isLastStepFinish ? turnDuration : undefined}
                   isStreaming={isStreaming}
+                  agent={agent}
+                  modelLabel={modelLabel}
                 />
               )
             }
@@ -481,6 +489,8 @@ const AssistantMessageView = memo(function AssistantMessageView({
                     part={part}
                     duration={isLastStepFinish ? duration : undefined}
                     turnDuration={isLastStepFinish ? turnDuration : undefined}
+                    agent={agent}
+                    modelLabel={modelLabel}
                   />
                 )
               case 'subtask':
@@ -525,6 +535,8 @@ interface ToolGroupProps {
   duration?: number
   turnDuration?: number
   isStreaming?: boolean
+  agent?: string
+  modelLabel?: string
 }
 
 /** 用户需要阅读/交互的工具：沉浸模式下这些工具完成后保持展开 */
@@ -534,7 +546,15 @@ function isReadableTool(toolName: string): boolean {
   return READABLE_TOOL_PATTERNS.test(toolName.toLowerCase())
 }
 
-const ToolGroup = memo(function ToolGroup({ parts, stepFinish, duration, turnDuration, isStreaming }: ToolGroupProps) {
+const ToolGroup = memo(function ToolGroup({
+  parts,
+  stepFinish,
+  duration,
+  turnDuration,
+  isStreaming,
+  agent,
+  modelLabel,
+}: ToolGroupProps) {
   const { t } = useTranslation('message')
   const { descriptiveToolSteps, inlineToolRequests, immersiveMode } = useTheme()
   const { pendingPermissions, pendingQuestions } = useInlineToolRequests()
@@ -703,7 +723,13 @@ const ToolGroup = memo(function ToolGroup({ parts, stepFinish, duration, turnDur
 
         {stepFinish && (
           <div className="mt-2">
-            <StepFinishPartView part={stepFinish} duration={duration} turnDuration={turnDuration} />
+            <StepFinishPartView
+              part={stepFinish}
+              duration={duration}
+              turnDuration={turnDuration}
+              agent={agent}
+              modelLabel={modelLabel}
+            />
           </div>
         )}
       </div>

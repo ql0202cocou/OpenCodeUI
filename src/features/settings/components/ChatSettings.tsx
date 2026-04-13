@@ -191,6 +191,8 @@ export function ChatSettings() {
       <SettingsSection title={t('chat.stepFinishInfo')}>
         {(
           [
+            { key: 'agent', label: t('chat.agent'), desc: t('chat.showAgent') },
+            { key: 'model', label: t('chat.model'), desc: t('chat.showModel') },
             { key: 'tokens', label: t('chat.tokens'), desc: t('chat.showTokenUsage') },
             { key: 'cache', label: t('chat.cache'), desc: t('chat.showCacheHit') },
             { key: 'cost', label: t('chat.cost'), desc: t('chat.showApiCost') },
