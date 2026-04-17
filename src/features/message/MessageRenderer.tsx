@@ -514,7 +514,7 @@ const AssistantMessageView = memo(function AssistantMessageView({
 
       {(showTurnDurationFooter || showCompletedAtFooter) && (
         <div className="flex items-center gap-3 text-[length:var(--fs-xxs)] text-text-500 pl-5 py-0.5">
-          {showTurnDurationFooter && <span>total {formatDuration(turnDuration!)}</span>}
+          {showTurnDurationFooter && <span>{formatDuration(turnDuration!)} total</span>}
           {showCompletedAtFooter && <span>{formatCompletedAt(completed!, completedAtFormat)}</span>}
         </div>
       )}
@@ -759,7 +759,7 @@ function formatTokens(
   return `${total} ${t('tokens')}`
 }
 
-type ToolSummaryCategory = 'execute' | 'edit' | 'explore' | 'network' | 'task' | 'todo' | 'question' | 'think' | 'other'
+type ToolSummaryCategory = 'execute' | 'edit' | 'read' | 'search' | 'list' | 'network' | 'task' | 'todo' | 'question' | 'skill' | 'think' | 'other'
 
 type ToolSummaryPhase = 'done' | 'active' | 'failed'
 
@@ -841,6 +841,13 @@ function buildDescriptiveToolStepsSummary(
     return [{ text: t('stepsCount', { done: 0, total: parts.length }), type: 'normal' }]
   }
 
+  let isFirstContent = true
+  for (const seg of segments) {
+    if (seg.text === sep) continue
+    if (isFirstContent) { isFirstContent = false; continue }
+    seg.text = seg.text.charAt(0).toLowerCase() + seg.text.slice(1)
+  }
+
   return segments
 }
 
@@ -851,6 +858,11 @@ function formatToolSummarySegment(
   t: (key: string, opts?: Record<string, unknown>) => string,
 ): string {
   const key = `toolSteps.${category}${phase.charAt(0).toUpperCase()}${phase.slice(1)}`
+  if (count === 1) {
+    const singularKey = `${key}Single`
+    const singular = t(singularKey)
+    if (singular !== singularKey) return singular
+  }
   return t(key, { count })
 }
 
@@ -860,9 +872,10 @@ function getToolSummaryCategory(toolName: string): ToolSummaryCategory {
   if (lower.includes('todo')) return 'todo'
   if (lower === 'task') return 'task'
   if (lower.includes('question') || lower.includes('ask')) return 'question'
+  if (lower.includes('skill')) return 'skill'
   if (
     lower.includes('bash') ||
-    lower.includes('sh') ||
+    lower === 'sh' ||
     lower.includes('cmd') ||
     lower.includes('terminal') ||
     lower.includes('shell')
@@ -879,16 +892,6 @@ function getToolSummaryCategory(toolName: string): ToolSummaryCategory {
     return 'edit'
   }
   if (
-    lower.includes('read') ||
-    lower.includes('cat') ||
-    lower.includes('search') ||
-    lower.includes('find') ||
-    lower.includes('grep') ||
-    lower.includes('glob')
-  ) {
-    return 'explore'
-  }
-  if (
     lower.includes('web') ||
     lower.includes('fetch') ||
     lower.includes('http') ||
@@ -898,6 +901,9 @@ function getToolSummaryCategory(toolName: string): ToolSummaryCategory {
   ) {
     return 'network'
   }
+  if (lower.includes('read') || lower.includes('cat')) return 'read'
+  if (lower.includes('grep') || lower.includes('search')) return 'search'
+  if (lower.includes('glob') || lower.includes('find')) return 'list'
   if (lower.includes('think') || lower.includes('reason') || lower.includes('plan')) return 'think'
   return 'other'
 }
