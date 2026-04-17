@@ -38,7 +38,8 @@ function getPresetPreviewColors(id: string, resolvedTheme: 'light' | 'dark') {
 function getSnippetFileName(name: string): string {
   const safe = name
     .trim()
-    .replace(/[<>:"/\\|?*\u0000-\u001F]/g, '')
+    .replace(/[<>:"/\\|?*]/g, '')
+    .replace(/\p{Cc}/gu, '')
     .replace(/\s+/g, '-')
   return `${safe || 'custom-css'}.css`
 }
