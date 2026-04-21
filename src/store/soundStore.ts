@@ -20,7 +20,6 @@ import { DEFAULT_SOUNDS } from '../utils/soundPlayer'
 // ============================================
 
 export interface EventSoundConfig {
-  enabled: boolean
   /** 'builtin:xxx' | 'custom' | 'none' */
   soundId: string
   /** 自定义音频的文件名（展示用） */
@@ -59,11 +58,19 @@ function createDefaultSettings(): SoundSettings {
     currentSessionEnabled: false,
     volume: 50,
     events: {
-      completed: { enabled: true, soundId: DEFAULT_SOUNDS.completed },
-      permission: { enabled: true, soundId: DEFAULT_SOUNDS.permission },
-      question: { enabled: true, soundId: DEFAULT_SOUNDS.question },
-      error: { enabled: true, soundId: DEFAULT_SOUNDS.error },
+      completed: { soundId: DEFAULT_SOUNDS.completed },
+      permission: { soundId: DEFAULT_SOUNDS.permission },
+      question: { soundId: DEFAULT_SOUNDS.question },
+      error: { soundId: DEFAULT_SOUNDS.error },
     },
+  }
+}
+
+function normalizeEventConfig(type: NotificationType, parsedEvent: unknown): EventSoundConfig {
+  const event = parsedEvent && typeof parsedEvent === 'object' ? (parsedEvent as Record<string, unknown>) : undefined
+  return {
+    soundId: typeof event?.soundId === 'string' ? event.soundId : DEFAULT_SOUNDS[type],
+    customFileName: typeof event?.customFileName === 'string' ? event.customFileName : undefined,
   }
 }
 
@@ -86,38 +93,10 @@ function loadSettings(): SoundSettings {
           : defaults.currentSessionEnabled,
       volume: typeof parsed.volume === 'number' ? Math.max(0, Math.min(100, parsed.volume)) : defaults.volume,
       events: {
-        completed: {
-          ...defaults.events.completed,
-          ...parsed.events?.completed,
-          enabled:
-            typeof parsed.events?.completed?.enabled === 'boolean'
-              ? parsed.events.completed.enabled
-              : defaults.events.completed.enabled,
-        },
-        permission: {
-          ...defaults.events.permission,
-          ...parsed.events?.permission,
-          enabled:
-            typeof parsed.events?.permission?.enabled === 'boolean'
-              ? parsed.events.permission.enabled
-              : defaults.events.permission.enabled,
-        },
-        question: {
-          ...defaults.events.question,
-          ...parsed.events?.question,
-          enabled:
-            typeof parsed.events?.question?.enabled === 'boolean'
-              ? parsed.events.question.enabled
-              : defaults.events.question.enabled,
-        },
-        error: {
-          ...defaults.events.error,
-          ...parsed.events?.error,
-          enabled:
-            typeof parsed.events?.error?.enabled === 'boolean'
-              ? parsed.events.error.enabled
-              : defaults.events.error.enabled,
-        },
+        completed: normalizeEventConfig('completed', parsed.events?.completed),
+        permission: normalizeEventConfig('permission', parsed.events?.permission),
+        question: normalizeEventConfig('question', parsed.events?.question),
+        error: normalizeEventConfig('error', parsed.events?.error),
       },
     }
   } catch {
@@ -275,25 +254,6 @@ class SoundStore {
   // ============================================
   // 事件音效配置
   // ============================================
-
-  isEventEnabled(type: NotificationType): boolean {
-    return this.settings.events[type]?.enabled !== false
-  }
-
-  setEventEnabled(type: NotificationType, enabled: boolean) {
-    this.settings = {
-      ...this.settings,
-      events: {
-        ...this.settings.events,
-        [type]: {
-          ...this.settings.events[type],
-          enabled,
-        },
-      },
-    }
-    this.persist()
-    this.notify()
-  }
 
   setEventSound(type: NotificationType, soundId: string) {
     this.settings = {

@@ -13,6 +13,7 @@ const {
   notificationPushMock,
   playNotificationSoundDedupedMock,
   getSoundSnapshotMock,
+  isSystemEnabledMock,
   activeSessionStoreMock,
 } = vi.hoisted(() => ({
   subscribeToEventsMock: vi.fn(),
@@ -24,14 +25,9 @@ const {
   getFocusedSessionIdMock: vi.fn<() => string | null>(() => null),
   notificationPushMock: vi.fn(),
   playNotificationSoundDedupedMock: vi.fn(),
+  isSystemEnabledMock: vi.fn((type: string) => type !== 'permission'),
   getSoundSnapshotMock: vi.fn(() => ({
     currentSessionEnabled: true,
-    events: {
-      completed: { enabled: true },
-      permission: { enabled: true },
-      question: { enabled: true },
-      error: { enabled: true },
-    },
   })),
   activeSessionStoreMock: {
     initialize: vi.fn(),
@@ -92,10 +88,12 @@ vi.mock('../store/notificationStore', () => ({
 vi.mock('../store/soundStore', () => ({
   soundStore: {
     getSnapshot: () => getSoundSnapshotMock(),
-    isEventEnabled: (type: 'completed' | 'permission' | 'question' | 'error') => {
-      const snapshot = getSoundSnapshotMock()
-      return snapshot.events[type]?.enabled !== false
-    },
+  },
+}))
+
+vi.mock('../store/notificationEventSettingsStore', () => ({
+  notificationEventSettingsStore: {
+    isSystemEnabled: (type: 'completed' | 'permission' | 'question' | 'error') => isSystemEnabledMock(type),
   },
 }))
 
@@ -121,6 +119,7 @@ describe('useGlobalEvents', () => {
     notificationPushMock.mockReset()
     playNotificationSoundDedupedMock.mockReset()
     getSoundSnapshotMock.mockReset()
+    isSystemEnabledMock.mockReset()
     Object.values(activeSessionStoreMock).forEach(value => {
       if (typeof value === 'function' && 'mockClear' in value) value.mockClear()
     })
@@ -128,13 +127,8 @@ describe('useGlobalEvents', () => {
     subscribeToEventsMock.mockImplementation(() => vi.fn())
     getSoundSnapshotMock.mockReturnValue({
       currentSessionEnabled: true,
-      events: {
-        completed: { enabled: true },
-        permission: { enabled: true },
-        question: { enabled: true },
-        error: { enabled: true },
-      },
     })
+    isSystemEnabledMock.mockImplementation((type: string) => type !== 'permission')
     activeSessionStoreMock.getSessionMeta.mockReturnValue({ title: 'Child Session', directory: '/workspace' })
     activeSessionStoreMock.getSnapshot.mockReturnValue({ statusMap: {} })
   })
@@ -195,15 +189,7 @@ describe('useGlobalEvents', () => {
       return vi.fn()
     })
     getFocusedSessionIdMock.mockReturnValue('child-session')
-    getSoundSnapshotMock.mockReturnValue({
-      currentSessionEnabled: true,
-      events: {
-        completed: { enabled: true },
-        permission: { enabled: false },
-        question: { enabled: true },
-        error: { enabled: true },
-      },
-    })
+    isSystemEnabledMock.mockImplementation(type => type !== 'permission')
 
     renderHook(() => useGlobalEvents())
 
@@ -256,19 +242,7 @@ describe('useGlobalEvents', () => {
         callbacks = cb
         return vi.fn()
       })
-      const events = {
-        completed: { enabled: true },
-        permission: { enabled: true },
-        question: { enabled: true },
-        error: { enabled: true },
-      }
-      getSoundSnapshotMock.mockReturnValue({
-        currentSessionEnabled: true,
-        events: {
-          ...events,
-          [disabledType]: { enabled: false },
-        },
-      })
+      isSystemEnabledMock.mockImplementation(type => type !== disabledType)
       beforeTrigger?.()
 
       renderHook(() => useGlobalEvents())

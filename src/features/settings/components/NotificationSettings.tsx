@@ -16,6 +16,10 @@ import {
 } from '../../../components/Icons'
 import { useNotification } from '../../../hooks'
 import { notificationStore } from '../../../store'
+import {
+  notificationEventSettingsStore,
+  useNotificationEventSettings,
+} from '../../../store/notificationEventSettingsStore'
 import { soundStore, useSoundSettings } from '../../../store/soundStore'
 import { Toggle, SettingRow, SettingsCard } from './SettingsUI'
 import { BUILTIN_SOUNDS, SOUND_OPTIONS, isSoundSupported, playSound } from '../../../utils/soundPlayer'
@@ -118,7 +122,7 @@ function EventEnableRow({
   color: string
 }) {
   const { t } = useTranslation(['settings'])
-  const settings = useSoundSettings()
+  const settings = useNotificationEventSettings()
   const eventConfig = settings.events[type]
 
   return (
@@ -126,9 +130,12 @@ function EventEnableRow({
       label={t(labelKey as `notifications.${string}`)}
       description={t(descKey as `notifications.${string}`)}
       icon={<span className={color}>{icon}</span>}
-      onClick={() => soundStore.setEventEnabled(type, !eventConfig.enabled)}
+      onClick={() => notificationEventSettingsStore.setSystemEnabled(type, !eventConfig.systemEnabled)}
     >
-      <Toggle enabled={eventConfig.enabled} onChange={() => soundStore.setEventEnabled(type, !eventConfig.enabled)} />
+      <Toggle
+        enabled={eventConfig.systemEnabled}
+        onChange={() => notificationEventSettingsStore.setSystemEnabled(type, !eventConfig.systemEnabled)}
+      />
     </SettingRow>
   )
 }
@@ -204,11 +211,7 @@ function EventSoundCard({
   }, [type])
 
   return (
-    <div
-      className={`rounded-lg border p-3 transition-opacity ${
-        eventConfig.enabled ? 'border-border-200/50 bg-bg-000/40' : 'border-border-200/35 bg-bg-000/25 opacity-70'
-      }`}
-    >
+    <div className="rounded-lg border border-border-200/50 bg-bg-000/40 p-3">
       {/* Header */}
       <div className="flex items-start justify-between gap-2 mb-2.5">
         <div className="flex items-center gap-2.5">

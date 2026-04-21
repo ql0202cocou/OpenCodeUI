@@ -20,7 +20,7 @@ import {
 } from '../hooks'
 import { usePermissions, usePermissionHandler, useMessageAnimation, useDirectory, useSessionContext } from '../hooks'
 import { useNotification } from './useNotification'
-import { soundStore } from '../store/soundStore'
+import { notificationEventSettingsStore } from '../store/notificationEventSettingsStore'
 import {
   sendMessageAsync,
   getSessionMessages,
@@ -316,7 +316,7 @@ export function useChatSession({
         // 页面不在前台时通知用户有权限请求等待批准
         const permDesc = request.patterns?.length ? `${request.permission}: ${request.patterns[0]}` : request.permission
         const title = buildNotificationTitle(request.sessionID, 'Permission Required')
-        if (soundStore.isEventEnabled('permission')) {
+        if (notificationEventSettingsStore.isSystemEnabled('permission')) {
           sendNotification(title, permDesc, {
             sessionId: request.sessionID,
             directory: effectiveDirectory,
@@ -336,7 +336,7 @@ export function useChatSession({
         // 页面不在前台时通知用户有问题等待回答
         const questionDesc = request.questions?.[0]?.header || 'AI is waiting for your input'
         const title = buildNotificationTitle(request.sessionID, 'Question')
-        if (soundStore.isEventEnabled('question')) {
+        if (notificationEventSettingsStore.isSystemEnabled('question')) {
           sendNotification(title, questionDesc, {
             sessionId: request.sessionID,
             directory: effectiveDirectory,
@@ -356,7 +356,7 @@ export function useChatSession({
       onSessionIdle: (sessionID: string) => {
         // 页面不在前台时发送浏览器通知
         const title = buildNotificationTitle(sessionID, 'Session completed')
-        if (soundStore.isEventEnabled('completed')) {
+        if (notificationEventSettingsStore.isSystemEnabled('completed')) {
           sendNotification(title, 'Session completed', {
             sessionId: sessionID,
             directory: effectiveDirectory,
@@ -367,7 +367,7 @@ export function useChatSession({
       onSessionError: (sessionID: string) => {
         // 页面不在前台时通知用户 session 出错
         const title = buildNotificationTitle(sessionID, 'Session error')
-        if (soundStore.isEventEnabled('error')) {
+        if (notificationEventSettingsStore.isSystemEnabled('error')) {
           sendNotification(title, 'Session error', {
             sessionId: sessionID,
             directory: effectiveDirectory,
@@ -431,7 +431,7 @@ export function useChatSession({
     })
 
     return unregister
-  }, [paneId])
+  }, [paneId, routeSessionId])
 
   // sessionId 变化时更新 consumer 关注的 session（无需重新注册）
   useEffect(() => {
@@ -686,6 +686,7 @@ export function useChatSession({
       queueFollowupMessages,
       isSessionBusy,
       effectiveDirectory,
+      buildLocalQueuedMessage,
       sendMessageNow,
     ],
   )

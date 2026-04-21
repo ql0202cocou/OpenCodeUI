@@ -10,7 +10,7 @@ const {
   registerSessionConsumerMock,
   updateConsumerSessionIdMock,
   sendNotificationMock,
-  isEventEnabledMock,
+  isSystemEnabledMock,
   errorHandlerMock,
 } = vi.hoisted(() => ({
   createSessionMock: vi.fn(),
@@ -20,7 +20,7 @@ const {
   registerSessionConsumerMock: vi.fn(),
   updateConsumerSessionIdMock: vi.fn(),
   sendNotificationMock: vi.fn(),
-  isEventEnabledMock: vi.fn((type: string) => type !== 'permission'),
+  isSystemEnabledMock: vi.fn((type: string) => type !== 'permission'),
   errorHandlerMock: vi.fn(),
 }))
 
@@ -92,9 +92,9 @@ vi.mock('./useNotification', () => ({
   useNotification: () => ({ sendNotification: sendNotificationMock }),
 }))
 
-vi.mock('../store/soundStore', () => ({
-  soundStore: {
-    isEventEnabled: (type: string) => isEventEnabledMock(type),
+vi.mock('../store/notificationEventSettingsStore', () => ({
+  notificationEventSettingsStore: {
+    isSystemEnabled: (type: string) => isSystemEnabledMock(type),
   },
 }))
 
@@ -137,12 +137,12 @@ describe('useChatSession handleCommand', () => {
     registerSessionConsumerMock.mockReset()
     updateConsumerSessionIdMock.mockReset()
     sendNotificationMock.mockReset()
-    isEventEnabledMock.mockReset()
+    isSystemEnabledMock.mockReset()
     errorHandlerMock.mockReset()
 
     registerSessionConsumerMock.mockReturnValue(vi.fn())
     getSelectableAgentsMock.mockResolvedValue([{ name: 'build', mode: 'primary', hidden: false }])
-    isEventEnabledMock.mockImplementation((type: string) => type !== 'permission')
+    isSystemEnabledMock.mockImplementation((type: string) => type !== 'permission')
 
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation(cb => window.setTimeout(() => cb(0), 16))
     vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(id => {
@@ -255,7 +255,7 @@ describe('useChatSession handleCommand', () => {
         callbacks = consumerCallbacks as typeof callbacks
         return vi.fn()
       })
-      isEventEnabledMock.mockImplementation((type: string) => type !== disabledType)
+      isSystemEnabledMock.mockImplementation((type: string) => type !== disabledType)
 
       renderHook(() =>
         useChatSession({

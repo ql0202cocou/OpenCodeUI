@@ -68,6 +68,9 @@ export { modelVisibilityStore, useHiddenModelKeys } from './modelVisibilityStore
 export { soundStore, useSoundSettings } from './soundStore'
 export type { SoundSettings, EventSoundConfig } from './soundStore'
 
+export { notificationEventSettingsStore, useNotificationEventSettings } from './notificationEventSettingsStore'
+export type { NotificationEventSettings, NotificationEventConfig } from './notificationEventSettingsStore'
+
 export { followupQueueStore, useFollowupQueue } from './followupQueueStore'
 export type { QueuedFollowupDraft } from './followupQueueStore'
 
