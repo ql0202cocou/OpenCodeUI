@@ -4,6 +4,8 @@ import { diffLines } from 'diff'
 import { ChevronDownIcon, ChevronRightIcon } from '../../../components/Icons'
 import type { ToolPart } from '../../../types/message'
 import { useDelayedRender } from '../../../hooks'
+import { useNow } from '../../../hooks/useNow'
+import { serverStore } from '../../../store/serverStore'
 import { useTheme } from '../../../hooks/useTheme'
 import { formatToolName, formatDuration } from '../../../utils/formatUtils'
 import {
@@ -52,10 +54,14 @@ export const ToolPartView = memo(function ToolPartView({
   const { state, tool: toolName } = part
   const title = state.title || getInputDescription(part) || ''
 
-  const duration = state.time?.start && state.time?.end ? state.time.end - state.time.start : undefined
-
   const isActive = state.status === 'running' || state.status === 'pending'
   const isError = state.status === 'error'
+  const now = useNow(250, isActive)
+  const startTime = state.time?.start
+  const calibratedNow = isActive ? serverStore.getActiveCalibratedNow() : undefined
+  const endTime = state.time?.end ?? (isActive ? (calibratedNow ?? now) : undefined)
+  const rawDuration = startTime !== undefined && endTime !== undefined ? endTime - startTime : undefined
+  const duration = rawDuration !== undefined && isActive ? Math.max(0, rawDuration) : rawDuration
   const { inlineToolRequests, immersiveMode, compactInlinePermission } = useTheme()
 
   const { pendingPermissions, pendingQuestions, onPermissionReply, onQuestionReply, onQuestionReject, isReplying } =
@@ -131,17 +137,11 @@ export const ToolPartView = memo(function ToolPartView({
     <div
       className={`
       relative flex items-center justify-center transition-colors duration-200
-      ${isActive ? 'text-accent-main-100' : ''}
+      ${isActive ? 'text-text-300' : ''}
       ${isError ? 'text-danger-100' : ''}
       ${state.status === 'completed' ? 'text-text-400 group-hover:text-text-300' : ''}
     `}
     >
-      {isActive && (
-        <span
-          className="absolute inset-0 rounded-full bg-accent-main-100/20 animate-ping"
-          style={{ animationDuration: '1.5s' }}
-        />
-      )}
       {getToolIcon(toolName)}
     </div>
   )
@@ -224,9 +224,9 @@ export const ToolPartView = memo(function ToolPartView({
           </div>
 
           <div className="ml-auto flex shrink-0 items-center gap-2">
-            {duration !== undefined && state.status === 'completed' && (
+            {duration !== undefined && (state.status === 'completed' || isActive) && (
               <span
-                className={`text-[length:var(--fs-xxs)] font-mono tabular-nums ${isError ? 'text-danger-100/70' : 'text-text-500'}`}
+                className={`text-[length:var(--fs-xxs)] font-mono tabular-nums ${isError ? 'text-danger-100/70' : isActive ? 'reasoning-shimmer-text' : 'text-text-500'}`}
               >
                 {formatDuration(duration)}
               </span>
@@ -256,6 +256,7 @@ export const ToolPartView = memo(function ToolPartView({
         {/* Content column */}
         <div className="min-w-0">
           <button
+            type="button"
             className="flex items-center gap-2 w-full h-9 text-left pl-2 pr-0 hover:bg-bg-200/40 rounded-sm transition-colors group/header"
             onClick={() => setExpanded(!expanded)}
           >
@@ -263,7 +264,7 @@ export const ToolPartView = memo(function ToolPartView({
               <span
                 className={`font-medium text-[length:var(--fs-md)] leading-tight transition-colors duration-300 shrink-0 ${
                   isActive
-                    ? 'text-accent-main-100'
+                    ? 'reasoning-shimmer-text'
                     : isError
                       ? 'text-danger-100'
                       : 'text-text-200 group-hover/header:text-text-100'
@@ -272,20 +273,28 @@ export const ToolPartView = memo(function ToolPartView({
                 {formatToolName(toolName)}
               </span>
               {title && (
-                <span className="text-[length:var(--fs-sm)] text-text-400 truncate min-w-0 flex-1 font-mono opacity-70">
+                <span
+                  className={`text-[length:var(--fs-sm)] truncate min-w-0 flex-1 font-mono ${
+                    isActive ? 'reasoning-shimmer-text' : 'text-text-400 opacity-70'
+                  }`}
+                >
                   {title}
                 </span>
               )}
             </div>
             <div className="flex items-center gap-2 ml-auto shrink-0">
-              {duration !== undefined && state.status === 'completed' && (
-                <span className="text-[length:var(--fs-xxs)] font-mono text-text-500 tabular-nums">
+              {duration !== undefined && (state.status === 'completed' || isActive) && (
+                <span
+                  className={`text-[length:var(--fs-xxs)] font-mono tabular-nums ${
+                    isActive ? 'reasoning-shimmer-text' : 'text-text-500'
+                  }`}
+                >
                   {formatDuration(duration)}
                 </span>
               )}
               <span
                 className={`text-[length:var(--fs-xxs)] font-medium transition-all duration-300 ${
-                  isActive ? 'opacity-100 text-accent-main-100' : 'opacity-0 w-0 overflow-hidden'
+                  isActive ? 'opacity-100 text-text-400' : 'opacity-0 w-0 overflow-hidden'
                 }`}
               >
                 {t('toolPart.running')}
@@ -337,6 +346,7 @@ export const ToolPartView = memo(function ToolPartView({
       <div className="flex-1 min-w-0">
         {/* Header - h-9 和 timeline 图标行等高 */}
         <button
+          type="button"
           className="flex items-center gap-2.5 w-full h-9 text-left pl-2 pr-0 hover:bg-bg-200/40 rounded-sm transition-colors group/header"
           onClick={() => setExpanded(!expanded)}
         >
@@ -344,7 +354,7 @@ export const ToolPartView = memo(function ToolPartView({
             <span
               className={`font-medium text-[length:var(--fs-md)] leading-tight transition-colors duration-300 shrink-0 ${
                 isActive
-                  ? 'text-accent-main-100'
+                  ? 'reasoning-shimmer-text'
                   : isError
                     ? 'text-danger-100'
                     : 'text-text-200 group-hover/header:text-text-100'
@@ -354,21 +364,29 @@ export const ToolPartView = memo(function ToolPartView({
             </span>
 
             {title && (
-              <span className="text-[length:var(--fs-sm)] text-text-400 truncate min-w-0 flex-1 font-mono opacity-70">
+              <span
+                className={`text-[length:var(--fs-sm)] truncate min-w-0 flex-1 font-mono ${
+                  isActive ? 'reasoning-shimmer-text' : 'text-text-400 opacity-70'
+                }`}
+              >
                 {title}
               </span>
             )}
           </div>
 
           <div className="flex items-center gap-2 ml-auto shrink-0">
-            {duration !== undefined && state.status === 'completed' && (
-              <span className="text-[length:var(--fs-xxs)] font-mono text-text-500 tabular-nums transition-opacity duration-300">
+            {duration !== undefined && (state.status === 'completed' || isActive) && (
+              <span
+                className={`text-[length:var(--fs-xxs)] font-mono tabular-nums transition-opacity duration-300 ${
+                  isActive ? 'reasoning-shimmer-text' : 'text-text-500'
+                }`}
+              >
                 {formatDuration(duration)}
               </span>
             )}
             <span
               className={`text-[length:var(--fs-xxs)] font-medium transition-all duration-300 ${
-                isActive ? 'opacity-100 text-accent-main-100' : 'opacity-0 w-0 overflow-hidden'
+                isActive ? 'opacity-100 text-text-400' : 'opacity-0 w-0 overflow-hidden'
               }`}
             >
               {t('toolPart.running')}
